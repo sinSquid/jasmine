@@ -42,6 +42,15 @@ A comic browser，support Android / iOS / MacOS / Windows / Linux.
 - [x] Devices adaptation
   - [x] Android's high frequency screen
 
+Feature status and verification gaps are maintained only in [feature.md](feature.md).
+
+## Development documentation
+
+- [Project workflow](AGENTS.md)
+- [Repository analysis](docs/仓库分析.md)
+- [Build and validation](docs/开发与验证.md)
+- [Team standards](docs/standards/团队与AI%20Coding项目规范.md)
+
 ## Technical architecture
 
 Flutter: high-performance UI

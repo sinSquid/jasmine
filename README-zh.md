@@ -44,6 +44,16 @@
 - [x] 设备优化
   - [x] 安卓的高刷新率屏幕的支持 
 
+功能状态统一维护在 [feature.md](feature.md)，其中区分已有实现、待验证和待完善内容。
+
+## 开发文档
+
+- [项目执行入口](AGENTS.md)
+- [代码仓库分析](docs/仓库分析.md)
+- [开发与验证](docs/开发与验证.md)
+- [团队项目规范](docs/standards/团队与AI%20Coding项目规范.md)
+- [团队成员执行规范](docs/standards/团队成员研发执行规范.md)
+
 ## 技术架构
 
 flutter + rust
