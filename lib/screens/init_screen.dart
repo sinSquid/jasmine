@@ -54,59 +54,44 @@ class _InitScreenState extends State<InitScreen> {
   Future _init() async {
     try {
       await methods.init();
+      if (!mounted) return;
       final startupImagePath = await methods.getStartupImagePath();
-      if (mounted) {
-        setState(() {
-          _startupImagePath = startupImagePath;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _startupImagePath = startupImagePath;
+      });
       await methods.init2();
+      if (!mounted) return;
       await initConfigs(context);
+      if (!mounted) return;
       debugPrient("STATE : ${loginStatus}");
-      if (!currentPassed()) {
-        Future.delayed(Duration.zero, () async {
-          await webDavSyncAuto(context);
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (BuildContext context) {
-              if (Platform.isLinux) {
-                return const CalculatorScreen();
-              }
-              return const UnlockBrowserScreen();
-            }),
-          );
-        });
-      } else if (currentAuthentication()) {
-        Future.delayed(Duration.zero, () async {
-          await webDavSyncAuto(context);
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (BuildContext context) {
-              return const AuthScreen();
-            }),
-          );
-        });
-      } else if (loginStatus == LoginStatus.notSet) {
-        Future.delayed(Duration.zero, () async {
-          await webDavSyncAuto(context);
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (BuildContext context) {
-              return firstLoginScreen;
-            }),
-          );
-        });
-      } else {
-        Future.delayed(Duration.zero, () async {
-          await webDavSyncAuto(context);
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (BuildContext context) {
-              return const AppScreen();
-            }),
-          );
-        });
-      }
+      Future.delayed(Duration.zero, () async {
+        if (!mounted) return;
+        await webDavSyncAuto(context);
+        if (!mounted) return;
+
+        final Widget nextScreen;
+        if (!currentPassed()) {
+          nextScreen = Platform.isLinux
+              ? const CalculatorScreen()
+              : const UnlockBrowserScreen();
+        } else if (currentAuthentication()) {
+          nextScreen = const AuthScreen();
+        } else if (loginStatus == LoginStatus.notSet) {
+          nextScreen = firstLoginScreen;
+        } else {
+          nextScreen = const AppScreen();
+        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => nextScreen),
+        );
+      });
     } catch (e, st) {
       debugPrient("$e\n$st");
+      if (!mounted) return;
       defaultToast(context, "初始化失败, 请设置网络");
       Future.delayed(Duration.zero, () {
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (BuildContext context) {
             return const NetworkSettingScreen();
@@ -135,6 +120,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   test() async {
     if (await verifyAuthentication(context)) {
+      if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (BuildContext context) {
           return const AppScreen();
