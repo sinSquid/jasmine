@@ -68,10 +68,6 @@ ThemeData _buildAppTheme(ColorScheme scheme, Brightness brightness) {
       titleTextStyle:
           textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
     ),
-    bottomAppBarTheme: BottomAppBarTheme(
-      color: scheme.surface,
-      elevation: 1,
-    ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: scheme.surface,
       surfaceTintColor: scheme.surfaceTint,
@@ -92,12 +88,12 @@ ThemeData _buildAppTheme(ColorScheme scheme, Brightness brightness) {
       foregroundColor: scheme.onPrimary,
       elevation: 4,
     ),
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       surfaceTintColor: scheme.surfaceTint,
     ),
-    dialogTheme: DialogTheme(
+    dialogTheme: DialogThemeData(
       backgroundColor: scheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       titleTextStyle:
