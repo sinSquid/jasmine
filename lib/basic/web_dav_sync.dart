@@ -17,10 +17,10 @@ Future webDavSync(BuildContext context) async {
       "password": currentWebDavPassword,
       "direction": "Merge",
     });
-    defaultToast(context, "WebDav 同步成功");
-  } catch (e, s) {
-    debugPrient("$e\n$s");
-    defaultToast(context, "WebDav 同步失败 : $e");
+    if (context.mounted) defaultToast(context, "WebDav 同步成功");
+  } catch (e) {
+    debugPrient("WebDav 同步失败 (${e.runtimeType})");
+    if (context.mounted) defaultToast(context, "WebDav 同步失败");
   }
 }
 
@@ -32,10 +32,10 @@ Future webDavSyncUpload(BuildContext context) async {
       "password": currentWebDavPassword,
       "direction": "Upload",
     });
-    defaultToast(context, "WebDav 覆盖上传成功");
-  } catch (e, s) {
-    debugPrient("$e\n$s");
-    defaultToast(context, "WebDav 覆盖上传失败 : $e");
+    if (context.mounted) defaultToast(context, "WebDav 覆盖上传成功");
+  } catch (e) {
+    debugPrient("WebDav 覆盖上传失败 (${e.runtimeType})");
+    if (context.mounted) defaultToast(context, "WebDav 覆盖上传失败");
   }
 }
 
@@ -47,10 +47,10 @@ Future webDavSyncDownload(BuildContext context) async {
       "password": currentWebDavPassword,
       "direction": "Download",
     });
-    defaultToast(context, "WebDav 覆盖下载成功");
-  } catch (e, s) {
-    debugPrient("$e\n$s");
-    defaultToast(context, "WebDav 覆盖下载失败 : $e");
+    if (context.mounted) defaultToast(context, "WebDav 覆盖下载成功");
+  } catch (e) {
+    debugPrient("WebDav 覆盖下载失败 (${e.runtimeType})");
+    if (context.mounted) defaultToast(context, "WebDav 覆盖下载失败");
   }
 }
 

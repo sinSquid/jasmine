@@ -5,7 +5,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:jasmine/basic/commons.dart';
 import 'package:jasmine/basic/log.dart';
 import 'dart:io';
-import 'dart:ui' as ui show Codec, instantiateImageCodec;
+import 'dart:ui' as ui show Codec, ImmutableBuffer;
 
 import 'package:jasmine/basic/methods.dart';
 import 'package:jasmine/screens/components/types.dart';
@@ -20,9 +20,10 @@ class JM3x4ImageProvider extends ImageProvider<JM3x4ImageProvider> {
   JM3x4ImageProvider(this.comicId, {this.scale = 1.0});
 
   @override
-  ImageStreamCompleter loadImage(JM3x4ImageProvider key, ImageDecoderCallback decode) {
+  ImageStreamCompleter loadImage(
+      JM3x4ImageProvider key, ImageDecoderCallback decode) {
     return MultiFrameImageStreamCompleter(
-      codec: _loadAsync(key),
+      codec: _loadAsync(key, decode),
       scale: key.scale,
     );
   }
@@ -32,18 +33,17 @@ class JM3x4ImageProvider extends ImageProvider<JM3x4ImageProvider> {
     return SynchronousFuture<JM3x4ImageProvider>(this);
   }
 
-  Future<ui.Codec> _loadAsync(JM3x4ImageProvider key) async {
+  Future<ui.Codec> _loadAsync(
+      JM3x4ImageProvider key, ImageDecoderCallback decode) async {
     assert(key == this);
-    return ui.instantiateImageCodec(
-      await File(await methods.jm3x4Cover(comicId)).readAsBytes(),
-    );
+    final path = await methods.jm3x4Cover(comicId);
+    return decode(await ui.ImmutableBuffer.fromFilePath(path));
   }
 
   @override
-  bool operator ==(dynamic other) {
-    if (other.runtimeType != runtimeType) return false;
-    final JM3x4ImageProvider typedOther = other;
-    return comicId == typedOther.comicId && scale == typedOther.scale;
+  bool operator ==(Object other) {
+    if (other is! JM3x4ImageProvider) return false;
+    return comicId == other.comicId && scale == other.scale;
   }
 
   @override
@@ -65,9 +65,10 @@ class PageImageProvider extends ImageProvider<PageImageProvider> {
   PageImageProvider(this.id, this.imageName, {this.scale = 1.0});
 
   @override
-  ImageStreamCompleter loadImage(PageImageProvider key, ImageDecoderCallback decode) {
+  ImageStreamCompleter loadImage(
+      PageImageProvider key, ImageDecoderCallback decode) {
     return MultiFrameImageStreamCompleter(
-      codec: _loadAsync(key),
+      codec: _loadAsync(key, decode),
       scale: key.scale,
     );
   }
@@ -77,20 +78,19 @@ class PageImageProvider extends ImageProvider<PageImageProvider> {
     return SynchronousFuture<PageImageProvider>(this);
   }
 
-  Future<ui.Codec> _loadAsync(PageImageProvider key) async {
+  Future<ui.Codec> _loadAsync(
+      PageImageProvider key, ImageDecoderCallback decode) async {
     assert(key == this);
-    return ui.instantiateImageCodec(
-      await File(await methods.jmPageImage(id, imageName)).readAsBytes(),
-    );
+    final path = await methods.jmPageImage(id, imageName);
+    return decode(await ui.ImmutableBuffer.fromFilePath(path));
   }
 
   @override
-  bool operator ==(dynamic other) {
-    if (other.runtimeType != runtimeType) return false;
-    final PageImageProvider typedOther = other;
-    return id == typedOther.id &&
-        imageName == typedOther.imageName &&
-        scale == typedOther.scale;
+  bool operator ==(Object other) {
+    if (other is! PageImageProvider) return false;
+    return id == other.id &&
+        imageName == other.imageName &&
+        scale == other.scale;
   }
 
   @override
@@ -135,6 +135,14 @@ class _JM3x4CoverState extends State<JM3x4Cover> {
   }
 
   @override
+  void didUpdateWidget(covariant JM3x4Cover oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.comicId != widget.comicId) {
+      _future = methods.jm3x4Cover(widget.comicId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return pathFutureImage(
       context,
@@ -143,6 +151,7 @@ class _JM3x4CoverState extends State<JM3x4Cover> {
       widget.height,
       fit: widget.fit,
       longPressMenuItems: widget.longPressMenuItems,
+      maxCacheWidth: 2048,
     );
   }
 }
@@ -178,6 +187,14 @@ class _JMSquareCoverState extends State<JMSquareCover> {
   }
 
   @override
+  void didUpdateWidget(covariant JMSquareCover oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.comicId != widget.comicId) {
+      _future = methods.jmSquareCover(widget.comicId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return pathFutureImage(
       context,
@@ -186,6 +203,7 @@ class _JMSquareCoverState extends State<JMSquareCover> {
       widget.height,
       fit: widget.fit,
       longPressMenuItems: widget.longPressMenuItems,
+      maxCacheWidth: 2048,
     );
   }
 }
@@ -219,6 +237,14 @@ class _JMPhotoImageState extends State<JMPhotoImage> {
   }
 
   @override
+  void didUpdateWidget(covariant JMPhotoImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.photoName != widget.photoName) {
+      _future = methods.jmPhotoImage(widget.photoName);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return pathFutureImage(
       context,
@@ -226,6 +252,7 @@ class _JMPhotoImageState extends State<JMPhotoImage> {
       widget.width,
       widget.height,
       fit: widget.fit,
+      maxCacheWidth: 2048,
     );
   }
 }
@@ -237,9 +264,14 @@ class JMPageImage extends StatefulWidget {
   final double? width;
   final double? height;
   final Function(Size size)? onTrueSize;
+  final bool decodeToDisplayWidth;
 
   const JMPageImage(this.id, this.imageName,
-      {Key? key, this.width, this.height, this.onTrueSize})
+      {Key? key,
+      this.width,
+      this.height,
+      this.onTrueSize,
+      this.decodeToDisplayWidth = false})
       : super(key: key);
 
   @override
@@ -256,13 +288,32 @@ class _JMPageImageState extends State<JMPageImage> {
     _future = _init();
   }
 
-  Future<String> _init() async {
-    final _path = await methods.jmPageImage(widget.id, widget.imageName);
-    if (widget.onTrueSize != null) {
-      ImageSize size = await methods.imageSize(_path);
-      widget.onTrueSize!(Size(size.w.toDouble(), size.h.toDouble()));
+  @override
+  void didUpdateWidget(covariant JMPageImage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.id != widget.id || oldWidget.imageName != widget.imageName) {
+      _futureKey = UniqueKey();
+      _future = _init();
     }
-    return _path;
+  }
+
+  Future<String> _init() async {
+    final id = widget.id;
+    final imageName = widget.imageName;
+    final path = await methods.jmPageImage(id, imageName);
+    if (mounted &&
+        widget.id == id &&
+        widget.imageName == imageName &&
+        widget.onTrueSize != null) {
+      final size = await methods.imageSize(path);
+      if (mounted &&
+          widget.id == id &&
+          widget.imageName == imageName &&
+          widget.onTrueSize != null) {
+        widget.onTrueSize!(Size(size.w.toDouble(), size.h.toDouble()));
+      }
+    }
+    return path;
   }
 
   void _reload() {
@@ -300,6 +351,7 @@ class _JMPageImageState extends State<JMPageImage> {
       widget.height,
       key: _futureKey,
       onReload: _reload,
+      maxCacheWidth: widget.decodeToDisplayWidth ? 4096 : null,
     );
   }
 }
@@ -309,7 +361,8 @@ Widget pathFutureImage(
     {BoxFit fit = BoxFit.cover,
     List<LongPressMenuItem>? longPressMenuItems,
     Key? key,
-    VoidCallback? onReload}) {
+    VoidCallback? onReload,
+    int? maxCacheWidth}) {
   // 使用 key 来确保 FutureBuilder 完全重建
   return FutureBuilder<String>(
       key: key,
@@ -336,6 +389,7 @@ Widget pathFutureImage(
             height,
             fit: fit,
             longPressMenuItems: longPressMenuItems,
+            maxCacheWidth: maxCacheWidth,
           );
         }
         // 其他状态（waiting, active, none）都显示加载状态
@@ -355,7 +409,7 @@ Widget buildSvg(String source, double? width, double? height,
   var widget = Container(
     width: width,
     height: height,
-    padding: margin != null ? EdgeInsets.all(10) : null,
+    padding: margin != null ? const EdgeInsets.all(10) : null,
     child: Center(
       child: SvgPicture.asset(
         source,
@@ -372,7 +426,7 @@ Widget buildMock(double? width, double? height) {
   var widget = Container(
     width: width,
     height: height,
-    padding: EdgeInsets.all(10),
+    padding: const EdgeInsets.all(10),
     child: Center(
       child: SvgPicture.asset(
         'lib/assets/unknown.svg',
@@ -478,9 +532,18 @@ Widget buildLoading(BuildContext context, double? width, double? height,
 
 Widget buildFile(
     BuildContext context, String file, double? width, double? height,
-    {BoxFit fit = BoxFit.cover, List<LongPressMenuItem>? longPressMenuItems}) {
-  var image = Image(
-    image: FileImage(File(file)),
+    {BoxFit fit = BoxFit.cover,
+    List<LongPressMenuItem>? longPressMenuItems,
+    int? maxCacheWidth}) {
+  final pixelWidth =
+      maxCacheWidth != null && width != null && width.isFinite && width > 0
+          ? (width * MediaQuery.devicePixelRatioOf(context))
+              .ceil()
+              .clamp(1, maxCacheWidth)
+          : null;
+  var image = Image.file(
+    File(file),
+    cacheWidth: pixelWidth,
     width: width,
     height: height,
     errorBuilder: (a, b, c) {

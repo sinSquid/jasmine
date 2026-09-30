@@ -150,10 +150,12 @@ class _ComicListState extends State<ComicList> {
   }
 
   Widget _buildCoverMode() {
-    List<Widget> widgets = [];
-    for (var i = 0; i < widget.data.length; i++) {
+    Widget itemAt(int i) {
+      if (i >= widget.data.length) {
+        return widget.appendList![i - widget.data.length];
+      }
       final sealed = _isSealed(widget.data[i]);
-      widgets.add(GestureDetector(
+      return GestureDetector(
         onTap: sealed
             ? null
             : () {
@@ -173,11 +175,10 @@ class _ComicListState extends State<ComicList> {
             },
           ),
         ),
-      ));
+      );
     }
-    if (widget.appendList != null) {
-      widgets.addAll(widget.appendList!);
-    }
+
+    final itemCount = widget.data.length + (widget.appendList?.length ?? 0);
     late final double childAspectRatio;
     switch (currentPagerCoverRate) {
       case PagerCoverRate.rate3x4:
@@ -193,7 +194,7 @@ class _ComicListState extends State<ComicList> {
         alignment: WrapAlignment.spaceAround,
         crossAxisAlignment: WrapCrossAlignment.center,
         runAlignment: WrapAlignment.spaceBetween,
-        children: widgets
+        children: List.generate(itemCount, itemAt)
             .map((e) => SizedBox(
                   width: columnWidth,
                   height: columnWidth / childAspectRatio,
@@ -203,12 +204,15 @@ class _ComicListState extends State<ComicList> {
       );
       return wrap;
     }
-    final view = GridView.count(
-      childAspectRatio: childAspectRatio,
-      crossAxisCount: pagerColumnNumber,
+    final view = GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: pagerColumnNumber,
+        childAspectRatio: childAspectRatio,
+      ),
       controller: widget.controller,
       physics: const AlwaysScrollableScrollPhysics(),
-      children: widgets,
+      itemCount: itemCount,
+      itemBuilder: (context, index) => itemAt(index),
     );
     return NotificationListener(
       child: view,
@@ -220,10 +224,12 @@ class _ComicListState extends State<ComicList> {
   }
 
   Widget _buildInfoMode() {
-    List<Widget> widgets = [];
-    for (var i = 0; i < widget.data.length; i++) {
+    Widget itemAt(int i) {
+      if (i >= widget.data.length) {
+        return widget.appendList![i - widget.data.length];
+      }
       final sealed = _isSealed(widget.data[i]);
-      widgets.add(GestureDetector(
+      return GestureDetector(
         onTap: sealed
             ? null
             : () {
@@ -231,19 +237,19 @@ class _ComicListState extends State<ComicList> {
               },
         onLongPress: sealed ? null : _longPressCallback(i),
         child: _buildInfoCard(widget.data[i]),
-      ));
+      );
     }
-    if (widget.appendList != null) {
-      widgets.addAll(widget.appendList!);
-    }
+
+    final itemCount = widget.data.length + (widget.appendList?.length ?? 0);
     if (widget.inScroll) {
-      return Column(children: widgets);
+      return Column(children: List.generate(itemCount, itemAt));
     }
-    final view = ListView(
+    final view = ListView.builder(
       controller: widget.controller,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(top: 10, bottom: 10),
-      children: widgets,
+      itemCount: itemCount,
+      itemBuilder: (context, index) => itemAt(index),
     );
     return NotificationListener(
       child: view,
@@ -255,10 +261,12 @@ class _ComicListState extends State<ComicList> {
   }
 
   Widget _buildTitleInCoverMode() {
-    List<Widget> widgets = [];
-    for (var i = 0; i < widget.data.length; i++) {
+    Widget itemAt(int i) {
+      if (i >= widget.data.length) {
+        return widget.appendList![i - widget.data.length];
+      }
       final sealed = _isSealed(widget.data[i]);
-      widgets.add(GestureDetector(
+      return GestureDetector(
         onTap: sealed
             ? null
             : () {
@@ -302,11 +310,10 @@ class _ComicListState extends State<ComicList> {
             },
           ),
         ),
-      ));
+      );
     }
-    if (widget.appendList != null) {
-      widgets.addAll(widget.appendList!);
-    }
+
+    final itemCount = widget.data.length + (widget.appendList?.length ?? 0);
     late final double childAspectRatio;
     switch (currentPagerCoverRate) {
       case PagerCoverRate.rate3x4:
@@ -322,7 +329,7 @@ class _ComicListState extends State<ComicList> {
         alignment: WrapAlignment.spaceAround,
         crossAxisAlignment: WrapCrossAlignment.center,
         runAlignment: WrapAlignment.spaceBetween,
-        children: widgets
+        children: List.generate(itemCount, itemAt)
             .map((e) => SizedBox(
                   width: columnWidth,
                   height: columnWidth / childAspectRatio,
@@ -332,12 +339,15 @@ class _ComicListState extends State<ComicList> {
       );
       return wrap;
     }
-    final view = GridView.count(
-      childAspectRatio: childAspectRatio,
-      crossAxisCount: pagerColumnNumber,
+    final view = GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: pagerColumnNumber,
+        childAspectRatio: childAspectRatio,
+      ),
       controller: widget.controller,
       physics: const AlwaysScrollableScrollPhysics(),
-      children: widgets,
+      itemCount: itemCount,
+      itemBuilder: (context, index) => itemAt(index),
     );
     return NotificationListener(
       child: view,
@@ -360,10 +370,12 @@ class _ComicListState extends State<ComicList> {
         height = width;
         break;
     }
-    List<Widget> widgets = [];
-    for (var i = 0; i < widget.data.length; i++) {
+    Widget itemAt(int i) {
+      if (i >= widget.data.length) {
+        return widget.appendList![i - widget.data.length];
+      }
       final sealed = _isSealed(widget.data[i]);
-      widgets.add(GestureDetector(
+      return GestureDetector(
         onTap: sealed
             ? null
             : () {
@@ -407,25 +419,28 @@ class _ComicListState extends State<ComicList> {
             ),
           ],
         ),
-      ));
+      );
     }
-    if (widget.appendList != null) {
-      widgets.addAll(widget.appendList!);
-    }
-    final wrap = Wrap(
-      alignment: WrapAlignment.spaceAround,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      runAlignment: WrapAlignment.spaceBetween,
-      children: widgets,
-    );
+
+    final itemCount = widget.data.length + (widget.appendList?.length ?? 0);
     if (widget.inScroll) {
-      return wrap;
+      return Wrap(
+        alignment: WrapAlignment.spaceAround,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        runAlignment: WrapAlignment.spaceBetween,
+        children: List.generate(itemCount, itemAt),
+      );
     }
-    final view = ListView(
+    final view = GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: pagerColumnNumber,
+        childAspectRatio: width / (height + 50),
+      ),
       controller: widget.controller,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(10.0),
-      children: [wrap],
+      itemCount: itemCount,
+      itemBuilder: (context, index) => itemAt(index),
     );
     return NotificationListener(
       child: view,

@@ -56,11 +56,8 @@ Future initVersion() async {
     _version = "dirty";
   }
   // 检查周期
-  var vStr = await methods.loadProperty(_propertyName);
-  if (vStr == "") {
-    vStr = "0";
-  }
-  _period = int.parse(vStr);
+  final vStr = await methods.loadProperty(_propertyName);
+  _period = int.tryParse(vStr) ?? 0;
   if (_period > 0) {
     if (DateTime.now().millisecondsSinceEpoch > _period) {
       await methods.saveProperty(_propertyName, "0");
@@ -125,8 +122,7 @@ Future _versionCheck() async {
       if (remoteSemVer != null &&
           _compareSemVer(localSemVer, remoteSemVer) > 0) {
         _latestVersion = remoteLatestVersion;
-        _latestVersionInfo =
-            config["changeLog"]?.toString().trim() ?? "";
+        _latestVersionInfo = config["changeLog"]?.toString().trim() ?? "";
       } else {
         _latestVersion = null;
         _latestVersionInfo = null;

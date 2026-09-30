@@ -16,11 +16,8 @@ final valueMap = {
 
 Future<void> initFontSizeAdjust() async {
   for (var key in titleMap.keys) {
-    var str = await methods.loadProperty(key.toString());
-    if (str == "") {
-      str = "0";
-    }
-    valueMap[key] = int.parse(str);
+    final str = await methods.loadProperty(key.toString());
+    valueMap[key] = (int.tryParse(str) ?? 0).clamp(-5, 5);
   }
 }
 

@@ -10,11 +10,8 @@ int get pagerColumnNumber => _pagerColumnNumber;
 final pageColumnEvent = Event();
 
 Future initPagerColumnCount() async {
-  String numStr = await methods.loadProperty(_propertyName);
-  if (numStr == "") {
-    numStr = "4";
-  }
-  _pagerColumnNumber = int.parse(numStr);
+  final numStr = await methods.loadProperty(_propertyName);
+  _pagerColumnNumber = (int.tryParse(numStr) ?? 4).clamp(1, 10);
 }
 
 Future choosePagerColumnCount(BuildContext context) async {

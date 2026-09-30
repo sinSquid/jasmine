@@ -5,7 +5,6 @@ import 'dart:math';
 import 'package:another_xlider/another_xlider.dart';
 import 'package:event/event.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
 import 'package:flutter/services.dart';
 import 'package:jasmine/basic/commons.dart';
 import 'package:jasmine/basic/log.dart';
@@ -30,6 +29,7 @@ import '../configs/ignore_view_log.dart';
 import '../configs/no_animation.dart';
 import '../configs/volume_key_control.dart';
 import 'components/images.dart';
+import 'components/image_preloader.dart';
 import 'components/right_click_pop.dart';
 
 class ComicReaderScreen extends StatefulWidget {
@@ -1120,9 +1120,7 @@ class _ComicReaderWebToonState extends _ComicReaderState {
   Widget _buildList() {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        // reload _images size
-        List<Widget> _images = [];
-        for (var index = 0; index < widget.chapter.images.length; index++) {
+        Widget buildPage(int index) {
           late Size renderSize;
           if (_trueSizes[index] != null) {
             if (widget.readerDirection == ReaderDirection.topToBottom) {
@@ -1156,21 +1154,23 @@ class _ComicReaderWebToonState extends _ComicReaderState {
           }
           var currentIndex = index;
           onTrueSize(Size size) {
+            if (!mounted || size.width <= 0 || size.height <= 0) return;
+            if (_trueSizes[currentIndex] == size) return;
             setState(() {
               _trueSizes[currentIndex] = size;
             });
           }
 
-          _images.add(
-            JMPageImage(
-              widget.chapter.id,
-              widget.chapter.images[index],
-              width: renderSize.width,
-              height: renderSize.height,
-              onTrueSize: onTrueSize,
-            ),
+          return JMPageImage(
+            widget.chapter.id,
+            widget.chapter.images[index],
+            width: renderSize.width,
+            height: renderSize.height,
+            onTrueSize: onTrueSize,
+            decodeToDisplayWidth: true,
           );
         }
+
         return zoomable.ZoomablePositionedList.builder(
           enableZoom: false,
           initialScrollIndex: widget.startIndex,
@@ -1195,7 +1195,7 @@ class _ComicReaderWebToonState extends _ComicReaderState {
             if (widget.chapter.images.length == index) {
               return _buildNextEp();
             }
-            return _images[index];
+            return buildPage(index);
           },
         );
       },
@@ -1229,13 +1229,24 @@ class _ComicReaderWebToonState extends _ComicReaderState {
 
 class _ComicReaderGalleryState extends _ComicReaderState {
   late PageController _pageController;
+  late final ImagePreloader _imagePreloader;
   final Map<int, int> _reloadKeys = {}; // 跟踪每个页面的重新加载次数
 
   @override
   void initState() {
     _pageController = PageController(initialPage: widget.startIndex);
     super.initState();
+    _imagePreloader = ImagePreloader(_precachePage);
     _preloadJump(widget.startIndex, init: true);
+  }
+
+  Future<void> _precachePage(int index) {
+    if (!mounted) return Future.value();
+    return precacheImage(
+      PageImageProvider(widget.chapter.id, widget.chapter.images[index]),
+      context,
+      onError: (error, stackTrace) {},
+    );
   }
 
   void _reloadImage(int index) async {
@@ -1322,6 +1333,7 @@ class _ComicReaderGalleryState extends _ComicReaderState {
 
   @override
   void dispose() {
+    _imagePreloader.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -1359,32 +1371,24 @@ class _ComicReaderGalleryState extends _ComicReaderState {
   }
 
   void _onGalleryPageChange(int to) {
-    var toIndex = to * 2;
-    // 提前加载
-    for (var i = toIndex + 1;
-        i < toIndex + 3 && i < widget.chapter.images.length;
-        i++) {
-      final ip = PageImageProvider(widget.chapter.id, widget.chapter.images[i]);
-      precacheImage(ip, context);
-    }
-    // 提前加载
+    _preloadJump(to);
     super._onCurrentChange(to);
   }
 
-  _preloadJump(int index, {bool init = false}) {
-    fn() {
-      for (var i = index - 1; i < index + 3; i++) {
-        if (i < 0 || i >= widget.chapter.images.length) continue;
-        final ip =
-            PageImageProvider(widget.chapter.id, widget.chapter.images[i]);
-        precacheImage(ip, context);
-      }
+  void _preloadJump(int index, {bool init = false}) {
+    void schedule() {
+      if (!mounted) return;
+      _imagePreloader.schedule([
+        if (index + 1 < widget.chapter.images.length) index + 1,
+        if (index + 2 < widget.chapter.images.length) index + 2,
+        if (index > 0) index - 1,
+      ]);
     }
 
     if (init) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => fn());
+      WidgetsBinding.instance.addPostFrameCallback((_) => schedule());
     } else {
-      fn();
+      schedule();
     }
   }
 
@@ -1494,9 +1498,7 @@ class _ListViewReaderState extends _ComicReaderState {
   Widget _buildList() {
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        // reload _images size
-        List<Widget> _images = [];
-        for (var index = 0; index < widget.chapter.images.length; index++) {
+        Widget buildPage(int index) {
           late Size renderSize;
           if (_trueSizes[index] != null) {
             if (currentReaderDirection == ReaderDirection.topToBottom) {
@@ -1531,21 +1533,22 @@ class _ListViewReaderState extends _ComicReaderState {
           }
           var currentIndex = index;
           onTrueSize(Size size) {
+            if (!mounted || size.width <= 0 || size.height <= 0) return;
+            if (_trueSizes[currentIndex] == size) return;
             setState(() {
               _trueSizes[currentIndex] = size;
             });
           }
 
-          _images.add(
-            JMPageImage(
-              widget.chapter.id,
-              widget.chapter.images[index],
-              width: renderSize.width,
-              height: renderSize.height,
-              onTrueSize: onTrueSize,
-            ),
+          return JMPageImage(
+            widget.chapter.id,
+            widget.chapter.images[index],
+            width: renderSize.width,
+            height: renderSize.height,
+            onTrueSize: onTrueSize,
           );
         }
+
         return zoomable.ZoomablePositionedList.builder(
           gestureSpeed: currentGestureSpeed(),
           dragRegionLock: currentDragRegionLock(),
@@ -1579,7 +1582,7 @@ class _ListViewReaderState extends _ComicReaderState {
             if (widget.chapter.images.length == index) {
               return _buildNextEp();
             }
-            return _images[index];
+            return buildPage(index);
           },
         );
       },
@@ -1614,161 +1617,147 @@ class _ListViewReaderState extends _ComicReaderState {
 
 class _TwoPageGalleryReaderState extends _ComicReaderState {
   late PageController _pageController;
-  late final List<Size?> _trueSizes = [];
-  List<ImageProvider> ips = [];
-  List<PhotoViewGalleryPageOptions> options = [];
-  late PhotoViewGallery _view;
+  late final ImagePreloader _imagePreloader;
   final Map<int, int> _imageProviderKeys = {};
 
   @override
   void initState() {
-    // 需要先初始化 super._startIndex 才能使用, 所以在上面
-    for (final _ in widget.chapter.images) {
-      _trueSizes.add(null);
-    }
     super.initState();
     _pageController = PageController(initialPage: widget.startIndex ~/ 2);
-    for (var index = 0; index < widget.chapter.images.length; index++) {
-      _imageProviderKeys[index] = 0;
-      ips.add(PageImageProvider(
-        widget.chapter.id,
-        widget.chapter.images[index],
-      ));
-    }
-    _buildOptions();
-    _buildView();
+    _imagePreloader = ImagePreloader(_precachePage);
     _preloadJump(widget.startIndex, init: true);
   }
 
-  void _buildView() {
-    _view = PhotoViewGallery(
+  Future<void> _precachePage(int index) {
+    if (!mounted) return Future.value();
+    return precacheImage(
+      PageImageProvider(widget.chapter.id, widget.chapter.images[index]),
+      context,
+      onError: (error, stackTrace) {},
+    );
+  }
+
+  Widget _buildView() {
+    return PhotoViewGallery.builder(
       pageController: _pageController,
-      pageOptions: options,
+      itemCount: (widget.chapter.images.length + 1) ~/ 2,
+      builder: (context, pageIndex) => _buildOptions(pageIndex),
       scrollDirection: widget.readerDirection == ReaderDirection.topToBottom
           ? Axis.vertical
           : Axis.horizontal,
       reverse: widget.readerDirection == ReaderDirection.rightToLeft,
       onPageChanged: _onGalleryPageChange,
-      backgroundDecoration: BoxDecoration(color: Colors.black),
+      backgroundDecoration: const BoxDecoration(color: Colors.black),
     );
   }
 
-  void _buildOptions() {
-    options.clear();
-    for (var index = 0; index < ips.length; index += 2) {
-      // 两页
-      late ImageProvider leftIp = ips[index];
-      late ImageProvider rightIp = ips[index + 1];
-      late int leftIndex = index;
-      late int rightIndex = index + 1;
-      if (index + 1 < ips.length) {
-        leftIp = ips[index];
-        rightIp = ips[index + 1];
-        leftIndex = index;
-        rightIndex = index + 1;
-      } else {
-        leftIp = ips[index];
-        // ImageProvider by color black
-        rightIp = const AssetImage('lib/assets/0.png');
-        leftIndex = index;
-        rightIndex = -1; // 表示右侧是占位图
-      }
-      if (currentTwoPageDirection == TwoPageDirection.rightToLeft) {
-        final temp = leftIp;
-        final tempIndex = leftIndex;
-        leftIp = rightIp;
-        leftIndex = rightIndex;
-        rightIp = temp;
-        rightIndex = tempIndex;
-      }
-      options.add(
-        PhotoViewGalleryPageOptions.customChild(
-          disableGestures:
-              currentReaderControllerType == ReaderControllerType.touchDouble ||
-                  currentReaderControllerType ==
-                      ReaderControllerType.touchDoubleOnceNext,
-          child: LayoutBuilder(
-            builder: (BuildContext context, BoxConstraints constraints) {
-              return Row(
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Image(
-                        key: leftIndex >= 0
-                            ? ValueKey(_imageProviderKeys[leftIndex])
-                            : null,
-                        image: leftIp,
-                        fit: BoxFit.contain,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) {
-                            return child;
-                          }
-                          return buildLoading(
-                            context,
-                            constraints.maxWidth / 2,
-                            constraints.maxHeight / 2,
-                          );
-                        },
-                        errorBuilder: (b, e, s) {
-                          debugPrient("$e,$s");
-                          return buildError(
-                            context,
-                            constraints.maxWidth / 2,
-                            constraints.maxHeight / 2,
-                            onReload: leftIndex >= 0
-                                ? () => _reloadImage(leftIndex)
-                                : null,
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Image(
-                        key: rightIndex >= 0
-                            ? ValueKey(_imageProviderKeys[rightIndex])
-                            : null,
-                        image: rightIp,
-                        fit: BoxFit.contain,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) {
-                            return child;
-                          }
-                          return buildLoading(
-                            context,
-                            constraints.maxWidth / 2,
-                            constraints.maxHeight / 2,
-                          );
-                        },
-                        errorBuilder: (b, e, s) {
-                          debugPrient("$e,$s");
-                          return buildError(
-                            context,
-                            constraints.maxWidth / 2,
-                            constraints.maxHeight / 2,
-                            onReload: rightIndex >= 0
-                                ? () => _reloadImage(rightIndex)
-                                : null,
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      );
+  PhotoViewGalleryPageOptions _buildOptions(int pageIndex) {
+    final index = pageIndex * 2;
+    ImageProvider leftIp =
+        PageImageProvider(widget.chapter.id, widget.chapter.images[index]);
+    late ImageProvider rightIp;
+    if (index + 1 < widget.chapter.images.length) {
+      rightIp = PageImageProvider(
+          widget.chapter.id, widget.chapter.images[index + 1]);
+    } else {
+      rightIp = const AssetImage('lib/assets/0.png');
     }
+    var leftIndex = index;
+    var rightIndex = index + 1 < widget.chapter.images.length ? index + 1 : -1;
+    if (currentTwoPageDirection == TwoPageDirection.rightToLeft) {
+      final temp = leftIp;
+      final tempIndex = leftIndex;
+      leftIp = rightIp;
+      leftIndex = rightIndex;
+      rightIp = temp;
+      rightIndex = tempIndex;
+    }
+    return PhotoViewGalleryPageOptions.customChild(
+      disableGestures:
+          currentReaderControllerType == ReaderControllerType.touchDouble ||
+              currentReaderControllerType ==
+                  ReaderControllerType.touchDoubleOnceNext,
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          return Row(
+            children: [
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Image(
+                    key: leftIndex >= 0
+                        ? ValueKey(_imageProviderKeys[leftIndex])
+                        : null,
+                    image: leftIp,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) {
+                        return child;
+                      }
+                      return buildLoading(
+                        context,
+                        constraints.maxWidth / 2,
+                        constraints.maxHeight / 2,
+                      );
+                    },
+                    errorBuilder: (b, e, s) {
+                      debugPrient("$e,$s");
+                      return buildError(
+                        context,
+                        constraints.maxWidth / 2,
+                        constraints.maxHeight / 2,
+                        onReload: leftIndex >= 0
+                            ? () => _reloadImage(leftIndex)
+                            : null,
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Image(
+                    key: rightIndex >= 0
+                        ? ValueKey(_imageProviderKeys[rightIndex])
+                        : null,
+                    image: rightIp,
+                    fit: BoxFit.contain,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) {
+                        return child;
+                      }
+                      return buildLoading(
+                        context,
+                        constraints.maxWidth / 2,
+                        constraints.maxHeight / 2,
+                      );
+                    },
+                    errorBuilder: (b, e, s) {
+                      debugPrient("$e,$s");
+                      return buildError(
+                        context,
+                        constraints.maxWidth / 2,
+                        constraints.maxHeight / 2,
+                        onReload: rightIndex >= 0
+                            ? () => _reloadImage(rightIndex)
+                            : null,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
   }
 
   void _reloadImage(int index) async {
     if (mounted) {
-      final oldProvider = ips[index];
+      final oldProvider =
+          PageImageProvider(widget.chapter.id, widget.chapter.images[index]);
       await oldProvider.evict();
       await methods.deleteJmPageImageCache(
         widget.chapter.id,
@@ -1779,17 +1768,13 @@ class _TwoPageGalleryReaderState extends _ComicReaderState {
       }
       setState(() {
         _imageProviderKeys[index] = (_imageProviderKeys[index] ?? 0) + 1;
-        ips[index] =
-            PageImageProvider(widget.chapter.id, widget.chapter.images[index]);
-        _buildOptions();
-        // 只重新构建 view，不改变整个组件的 key
-        _buildView();
       });
     }
   }
 
   @override
   void dispose() {
+    _imagePreloader.dispose();
     _pageController.dispose();
     super.dispose();
   }
@@ -1810,19 +1795,23 @@ class _TwoPageGalleryReaderState extends _ComicReaderState {
     _preloadJump(index);
   }
 
-  _preloadJump(int index, {bool init = false}) {
-    fn() {
-      for (var i = index - 2; i < index + 5; i++) {
-        if (i < 0 || i >= ips.length) continue;
-        final ip = ips[i];
-        precacheImage(ip, context);
-      }
+  void _preloadJump(int index, {bool init = false}) {
+    void schedule() {
+      if (!mounted) return;
+      final next = (index ~/ 2 + 1) * 2;
+      final previous = (index ~/ 2 - 1) * 2;
+      _imagePreloader.schedule([
+        if (next < widget.chapter.images.length) next,
+        if (next + 1 < widget.chapter.images.length) next + 1,
+        if (previous >= 0) previous,
+        if (previous + 1 >= 0) previous + 1,
+      ]);
     }
 
     if (init) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => fn());
+      WidgetsBinding.instance.addPostFrameCallback((_) => schedule());
     } else {
-      fn();
+      schedule();
     }
   }
 
@@ -1831,7 +1820,7 @@ class _TwoPageGalleryReaderState extends _ComicReaderState {
     return Stack(
       children: [
         GestureDetector(
-          child: _view,
+          child: _buildView(),
         ),
         _buildNextEpController(),
       ],
@@ -1839,12 +1828,8 @@ class _TwoPageGalleryReaderState extends _ComicReaderState {
   }
 
   void _onGalleryPageChange(int to) {
-    var toIndex = to * 2;
-    // 提前加载
-    for (var i = toIndex + 2; i < toIndex + 5 && i < ips.length; i++) {
-      final ip = ips[i];
-      precacheImage(ip, context);
-    }
+    final toIndex = to * 2;
+    _preloadJump(toIndex);
     // 包含一个下一章, 假设5张图片 0,1,2,3,4 length=5, 下一章=5
     if (to >= 0 && to < widget.chapter.images.length) {
       super._onCurrentChange(toIndex);
@@ -1853,7 +1838,9 @@ class _TwoPageGalleryReaderState extends _ComicReaderState {
 
   Widget _buildNextEpController() {
     if (super._fullscreenController() ||
-        _current < widget.chapter.images.length - 2) return Container();
+        _current < widget.chapter.images.length - 2) {
+      return Container();
+    }
     return Align(
       alignment: Alignment.bottomRight,
       child: Material(

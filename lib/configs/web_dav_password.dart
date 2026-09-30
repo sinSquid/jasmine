@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
@@ -15,7 +14,7 @@ Future<String?> initWebDavPassword() async {
 }
 
 String currentWebDavPasswordName() {
-  return _currentWebDavPassword == "" ? "未设置" : _currentWebDavPassword;
+  return _currentWebDavPassword.isEmpty ? "未设置" : "已设置";
 }
 
 Future<dynamic> inputWebDavPassword(BuildContext context) async {
@@ -24,6 +23,7 @@ Future<dynamic> inputWebDavPassword(BuildContext context) async {
     src: _currentWebDavPassword,
     title: 'WebDAV密码',
     hint: '请输入WebDAV密码',
+    isPasswd: true,
   );
   if (input != null) {
     await methods.saveProperty(_propertyName, input);
@@ -39,7 +39,7 @@ Widget webDavPasswordSetting() {
         subtitle: Text(currentWebDavPasswordName()),
         onTap: () async {
           await inputWebDavPassword(context);
-          setState(() {});
+          if (context.mounted) setState(() {});
         },
       );
     },
