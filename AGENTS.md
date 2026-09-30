@@ -2,9 +2,9 @@
 
 ## 阅读顺序与规范来源
 
-开始工作前阅读本文件、[团队项目规范](docs/standards/团队与AI%20Coding项目规范.md)、[人员执行规范](docs/standards/团队成员研发执行规范.md)和[通用项目工作流程](docs/standards/项目工作流程.md)，再阅读 [feature.md](feature.md)、[仓库分析](docs/仓库分析.md)和[开发与验证](docs/开发与验证.md)。
+开始工作前阅读本文件、[团队项目规范](docs/standards/团队与AI%20Coding项目规范.md)和[人员执行规范](docs/standards/团队成员研发执行规范.md)，再阅读 [feature.md](feature.md)、[仓库分析](docs/仓库分析.md)和[开发与验证](docs/开发与验证.md)。
 
-`docs/standards/` 为 2026-09-24 从 `/Users/sin/code/agents`、`/Users/sin/code/doc` 引入的原文快照；通用规则在上述文档维护，本文件只补充 Jasmine 的执行细节，更新快照时同时检查两份团队规范的一致性。
+`docs/standards/` 为 2026-09-24 从 `/Users/sin/code/agents`、`/Users/sin/code/doc` 引入的原文快照；团队规则在上述文档维护，本文件只补充 Jasmine 的执行细节，更新快照时同时检查两份团队规范的一致性。
 
 ## 项目边界
 
@@ -25,14 +25,14 @@ flutter test --timeout 60s
 
 生产构建必须覆盖受影响平台，例如 Android 使用 `flutter build apk --release --target-platform android-arm64`，macOS 使用 `flutter build macos --release`；其他平台见验证文档，不能用单个平台通过替代全部受影响平台验证。
 
-Rust 格式、Clippy、Release 全量测试和 Release 生产构建门禁按通用工作流程执行；必须先取得核心源码、读取其规范并确认实际 Cargo workspace、feature 和 target，再执行对应命令，禁止在缺少核心源码时声称通过或豁免。
+执行 Rust 格式、Clippy、Release 全量测试和 Release 生产构建检查前，必须先取得核心源码、读取其规范并确认实际 Cargo workspace、feature 和 target；禁止在缺少核心源码时声称检查已通过。
 
 当前 CI 只有手动工作流，尚不满足完整门禁；本文件列出的目标检查不代表已接入或已通过，失败或缺失检查必须如实记录并阻止相应受控操作。
 
 ## Git 与发布具体约束
 
 - 当前远端为 `origin`，默认主分支为 `master`；改动通过功能或修复分支发起 MR（GitHub 上为 PR），不得直接推送主分支。
-- 提交前核对 `git var GIT_AUTHOR_IDENT`；必须具有已确认的仓库级姓名和 `@xunlei.com` 邮箱，否则按通用工作流程询问并配置本仓库身份，SSH 公钥注释邮箱不等于提交身份。
+- 提交前核对 `git var GIT_AUTHOR_IDENT`；必须具有已确认的仓库级姓名和 `@xunlei.com` 邮箱，否则询问并配置本仓库身份，SSH 公钥注释邮箱不等于提交身份。
 - 提交、推送、Tag 和发布分别遵守人员授权规则；只有当前请求明确要求推送才可推送，推送前同步目标分支、检查最终差异并满足全部验证门禁。
 - Tag 只能指向以仅快进方式同步后、干净且与 `origin/master` 完全一致的 `master` 提交，名称和目标提交由用户明确授权。
 - 现有 Release 工作流手动创建 Release 并允许覆盖资产，与团队 Tag 制品规则有差距；完成流程对齐前不得沿用其逻辑发布或覆盖制品。
