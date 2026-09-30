@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:collection';
 import 'dart:convert';
 import 'dart:io';
 
@@ -16,6 +18,33 @@ class Methods {
 
   static const _channel = MethodChannel("methods");
   static HttpClient httpClient = HttpClient();
+  static const _maxActiveCalls = 4;
+  static const _maxWaitingCalls = 32;
+  static int _activeCalls = 0;
+  static final Queue<Completer<void>> _waitingCalls = Queue();
+
+  Future<dynamic> _callNative(String method, [dynamic arguments]) async {
+    if (_activeCalls < _maxActiveCalls) {
+      _activeCalls++;
+    } else {
+      if (_waitingCalls.length >= _maxWaitingCalls) {
+        throw StateError('原生调用繁忙，请稍后重试');
+      }
+      final turn = Completer<void>();
+      _waitingCalls.addLast(turn);
+      await turn.future;
+    }
+
+    try {
+      return await _channel.invokeMethod(method, arguments);
+    } finally {
+      if (_waitingCalls.isNotEmpty) {
+        _waitingCalls.removeFirst().complete();
+      } else {
+        _activeCalls--;
+      }
+    }
+  }
 
   Future<String> _invoke(String method, dynamic params) async {
     late String resp;
@@ -29,7 +58,7 @@ class Methods {
     //   resp = await rsp.transform(utf8.decoder).join();
     // } else
     {
-      resp = await _channel.invokeMethod(
+      resp = await _callNative(
           "invoke",
           jsonEncode({
             "method": method,
@@ -132,7 +161,7 @@ class Methods {
   }
 
   Future saveImageFileToGallery(String path) {
-    return _channel.invokeMethod("saveImageFileToGallery", path);
+    return _callNative("saveImageFileToGallery", path);
   }
 
   Future saveProperty(String key, String v) {
@@ -382,7 +411,7 @@ class Methods {
 
   /// 获取安卓的屏幕刷新率
   Future<List<String>> loadAndroidModes() async {
-    return List.of(await _channel.invokeMethod("androidGetModes"))
+    return List.of(await _callNative("androidGetModes"))
         .map((e) => "$e")
         .toList();
   }
@@ -396,7 +425,7 @@ class Methods {
   /// 获取安卓的版本
   Future<int> androidGetVersion() async {
     if (Platform.isAndroid) {
-      return await _channel.invokeMethod("androidGetVersion", {});
+      return await _callNative("androidGetVersion", {});
     }
     return 0;
   }
@@ -580,11 +609,11 @@ class Methods {
   }
 
   Future<String> iosGetDocumentDir() async {
-    return await _channel.invokeMethod("iosGetDocumentDir");
+    return await _callNative("iosGetDocumentDir");
   }
 
   Future<String> androidDefaultExportsDir() async {
-    return await _channel.invokeMethod("androidDefaultExportsDir");
+    return await _callNative("androidDefaultExportsDir");
   }
 
   Future<String> getDownloadAndExportTo() async {
@@ -614,11 +643,11 @@ class Methods {
   }
 
   Future androidMkdirs(String path) async {
-    return await _channel.invokeMethod("androidMkdirs", path);
+    return await _callNative("androidMkdirs", path);
   }
 
   Future<String> picturesDir() async {
-    return await _channel.invokeMethod("picturesDir");
+    return await _callNative("picturesDir");
   }
 
   Future<String> copyPictureToFolder(String folder, String path) async {
@@ -632,7 +661,7 @@ class Methods {
   }
 
   Future<bool> verifyAuthentication() async {
-    return await _channel.invokeMethod("verifyAuthentication");
+    return await _callNative("verifyAuthentication");
   }
 
   Future<String> daily(int uid) {
