@@ -184,7 +184,7 @@ class _DownloadsScreenState extends State<DownloadsScreen> {
       },
       minWidth: 0,
       child: Text(
-        "$downloadThreadCount线程",
+        "$downloadThreadCount图并发",
       ),
     );
   }

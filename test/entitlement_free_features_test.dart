@@ -11,6 +11,7 @@ import 'package:jasmine/configs/pager_controller_mode.dart';
 import 'package:jasmine/configs/pager_cover_rate.dart';
 import 'package:jasmine/configs/pager_view_mode.dart';
 import 'package:jasmine/screens/components/comic_pager.dart';
+import 'package:jasmine/screens/downloads_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -112,13 +113,60 @@ void main() {
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(body: downloadThreadCountSetting()),
     ));
-    await tester.tap(find.text('下载线程数'));
+    expect(find.text('最多 1 张图片同时下载'), findsOneWidget);
+    await tester.tap(find.text('图片下载并发数'));
     await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byType(SimpleDialog),
+        matching: find.text('图片下载并发数'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('每次处理一个章节，所选数量用于该章节的图片下载'), findsOneWidget);
     await tester.tap(find.text('5'));
     await tester.pumpAndSettle();
 
     expect(setValues, ['5']);
     expect(downloadThreadCount, 5);
+    expect(find.text('最多 5 张图片同时下载'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+      'downloads button describes image concurrency and keeps native settings',
+      (tester) async {
+    final setValues = <String>[];
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      final request = jsonDecode(call.arguments as String) as Map;
+      final method = request['method'] as String;
+      if (method == 'set_download_thread') {
+        setValues.add(request['params'] as String);
+      }
+      return jsonEncode({
+        'error_message': '',
+        'response_data': switch (method) {
+          'load_download_thread' => '2',
+          'all_downloads' => '[]',
+          _ => '',
+        },
+      });
+    });
+
+    await initDownloadThreadCount();
+    await tester.pumpWidget(const MaterialApp(home: DownloadsScreen()));
+    await tester.pumpAndSettle();
+    expect(find.text('2图并发'), findsOneWidget);
+    await tester.tap(find.text('2图并发'));
+    await tester.pumpAndSettle();
+    expect(find.text('图片下载并发数'), findsOneWidget);
+    expect(find.text('每次处理一个章节，所选数量用于该章节的图片下载'), findsOneWidget);
+    await tester.tap(find.text('3'));
+    await tester.pumpAndSettle();
+
+    expect(setValues, ['3']);
+    expect(downloadThreadCount, 3);
+    expect(find.text('3图并发'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

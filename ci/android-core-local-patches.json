@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "core_version": "v1.7.21",
-  "description": "Version-pinned local feature branches; real membership queries, authentication, async errors and ELF layout remain unchanged.",
+  "description": "Pinned local business-gate patches plus the download image-worker setting restart fix for the v1.7.21 Android core. Preserve authentication, real membership reporting, async error handling and ABI.",
   "abis": {
     "arm64-v8a": {
       "elf_class": 2,
       "machine": 183,
       "source_sha256": "ab5e0a521384b72b88bdede85121a879ec72be01d298da1d2f9417e19ddc46ee",
-      "patched_sha256": "835bbafe1d5051afbe913f5153abb2c822e773881dc927ce7a9b539348e5b8cf",
+      "patched_sha256": "f7aff0e5969cb6328c5324dc74f0f8ee9199f29b52e8686d221d7d36b6415382",
       "patches": [
         {
           "name": "comic_search",
@@ -228,6 +228,16 @@
           "old_asm": "tbz\tw23, #0x0, 0x716cf0 <jmbackend::download::start_download::{closure#0} (.llvm.8274981304579928169)+0x18e4>",
           "new_asm": "nop",
           "reason": "Read the configured worker count after Ok(false); preserve Pending/Err, default parsing, scheduler and resource cleanup."
+        },
+        {
+          "name": "set_download_thread_restart_flag",
+          "va": 6809748,
+          "file_offset": 6793364,
+          "before_hex": "a8a24039",
+          "after_hex": "28008052",
+          "old_asm": "ldrb w8, [x21, #0x28]",
+          "new_asm": "mov w8, #1",
+          "reason": "After saving the image worker count and acquiring RESTART_FLAG, always set true so workers reload the setting; preserve lock release, Pending/Err and cleanup."
         }
       ]
     },
@@ -235,7 +245,7 @@
       "elf_class": 1,
       "machine": 40,
       "source_sha256": "05efac7743ee7e6c86667d8b7ffa669185ec42906c6906c6ba8239ece54bb8cc",
-      "patched_sha256": "3c180a15ccfb641be46a80f97c101d902d7c694326e970e479d3d57f7a928f5b",
+      "patched_sha256": "c99e9280eab9e9beed89d0c4bfb9bf40175287261813fd5d8721ac7a2865c7b2",
       "patches": [
         {
           "name": "comic_search",
@@ -456,6 +466,16 @@
           "old_asm": "bmi 0x3ddffa",
           "new_asm": "b 0x3ddffa",
           "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "set_download_thread_restart_flag",
+          "va": 3866390,
+          "file_offset": 3862294,
+          "before_hex": "0128",
+          "after_hex": "8042",
+          "old_asm": "cmp r0, #1",
+          "new_asm": "cmp r0, r0",
+          "reason": "成功保存下载线程配置并获得 RESTART_FLAG 锁后，无论旧值 false/true 均写入 true，触发下一轮重新读取线程数；保留 Pending/Err、IT块内容（ARMv7）、锁释放及析构路径。"
         }
       ]
     },
@@ -463,7 +483,7 @@
       "elf_class": 2,
       "machine": 62,
       "source_sha256": "39d23268f392df6d25f14518209775d073456f2ecb999680d2996d7a95ff4710",
-      "patched_sha256": "233f5d0941d3573be25d1370ea86679ff3cfa3bb07c14faaa816634cce0fda17",
+      "patched_sha256": "1142cb75562325effe8df6ea5e9ff26187b9fbb789efe19702b0fccbed32504e",
       "patches": [
         {
           "name": "comic_search",
@@ -684,6 +704,16 @@
           "old_asm": "je\t0x5e745d <jmbackend::export::import_jm_zip::{closure#0}+0x16d>",
           "new_asm": "nop; nop",
           "reason": "Remove the false-membership import rejection; keep Pending, Err, cleanup and input/archive validation."
+        },
+        {
+          "name": "set_download_thread_restart_flag",
+          "va": 5942316,
+          "file_offset": 5925932,
+          "before_hex": "7504",
+          "after_hex": "9090",
+          "old_asm": "jne 0x5aac32",
+          "new_asm": "nop; nop",
+          "reason": "成功保存下载线程配置并获得 RESTART_FLAG 锁后，无论旧值 false/true 均写入 true，触发下一轮重新读取线程数；保留 Pending/Err、IT块内容（ARMv7）、锁释放及析构路径。"
         }
       ]
     }
