@@ -1,0 +1,691 @@
+{
+  "schema_version": 1,
+  "core_version": "v1.7.21",
+  "description": "Version-pinned local feature branches; real membership queries, authentication, async errors and ELF layout remain unchanged.",
+  "abis": {
+    "arm64-v8a": {
+      "elf_class": 2,
+      "machine": 183,
+      "source_sha256": "ab5e0a521384b72b88bdede85121a879ec72be01d298da1d2f9417e19ddc46ee",
+      "patched_sha256": "835bbafe1d5051afbe913f5153abb2c822e773881dc927ce7a9b539348e5b8cf",
+      "patches": [
+        {
+          "name": "comic_search",
+          "va": 6743336,
+          "file_offset": 6726952,
+          "before_hex": "ed000054",
+          "after_hex": "07000014",
+          "old_asm": "b.le\t0x66e544 <jmbackend::comic_search::{closure#0}+0x198>",
+          "new_asm": "b\t0x66e544 <jmbackend::comic_search::{closure#0}+0x198>",
+          "reason": "Allow all requested pages after the existing successful membership lookup; preserve Pending/Err and cleanup."
+        },
+        {
+          "name": "set_download_thread",
+          "va": 6809420,
+          "file_offset": 6793036,
+          "before_hex": "180c0036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw24, #0x0, 0x67e8cc <jmbackend::set_download_thread::{closure#0}+0x238>",
+          "new_asm": "nop",
+          "reason": "Permit storing the requested count after Ok(false), retaining property-write error handling and the real membership result."
+        },
+        {
+          "name": "load_download_thread",
+          "va": 6811988,
+          "file_offset": 6795604,
+          "before_hex": "d8070036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw24, #0x0, 0x67f24c <jmbackend::load_download_thread::{closure#0}+0x1d4>",
+          "new_asm": "nop",
+          "reason": "Read the stored thread count after Ok(false); preserve lookup Err and existing property parse/default behavior."
+        },
+        {
+          "name": "comics",
+          "va": 6865460,
+          "file_offset": 6849076,
+          "before_hex": "2d010054",
+          "after_hex": "09000014",
+          "old_asm": "b.le\t0x68c258 <jmbackend::comics::{closure#0}+0x230>",
+          "new_asm": "b\t0x68c258 <jmbackend::comics::{closure#0}+0x230>",
+          "reason": "Allow all requested pages after the existing successful membership lookup; preserve Pending/Err and cleanup."
+        },
+        {
+          "name": "favorites",
+          "va": 6889552,
+          "file_offset": 6873168,
+          "before_hex": "cd000054",
+          "after_hex": "06000014",
+          "old_asm": "b.le\t0x692068 <jmbackend::favorites::{closure#0}+0x1dc>",
+          "new_asm": "b\t0x692068 <jmbackend::favorites::{closure#0}+0x1dc>",
+          "reason": "Allow all requested pages after the existing successful membership lookup; preserve Pending/Err and cleanup."
+        },
+        {
+          "name": "init_dart",
+          "va": 6904076,
+          "file_offset": 6887692,
+          "before_hex": "410a0054",
+          "after_hex": "1f2003d5",
+          "old_asm": "b.ne\t0x695a54 <jmbackend::init_dart::{closure#0}+0x250c>",
+          "new_asm": "nop",
+          "reason": "Restore download/export directory after Ok(false); earlier Err drop/return and Pending branch remain unchanged."
+        },
+        {
+          "name": "export::export_jm_jmi",
+          "va": 6956072,
+          "file_offset": 6939688,
+          "before_hex": "97070036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw23, #0x0, 0x6a2518 <jmbackend::export::export_jm_jmi::{closure#0}+0x1b4>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::export_jm_pdf",
+          "va": 6965468,
+          "file_offset": 6949084,
+          "before_hex": "d6070036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw22, #0x0, 0x6a49d4 <jmbackend::export::export_jm_pdf::{closure#0}+0x1e0>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::export_jm_zip",
+          "va": 6983180,
+          "file_offset": 6966796,
+          "before_hex": "97070036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw23, #0x0, 0x6a8efc <jmbackend::export::export_jm_zip::{closure#0}+0x1b4>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::import_jm_dir",
+          "va": 6992516,
+          "file_offset": 6976132,
+          "before_hex": "78010036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw24, #0x0, 0x6ab2b0 <jmbackend::export::import_jm_dir::{closure#0}+0xe8>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::import_jm_jmi",
+          "va": 6994412,
+          "file_offset": 6978028,
+          "before_hex": "b4020036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw20, #0x0, 0x6aba40 <jmbackend::export::import_jm_jmi::{closure#0}+0x140>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::import_jm_zip",
+          "va": 7001788,
+          "file_offset": 6985404,
+          "before_hex": "b4020036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw20, #0x0, 0x6ad710 <jmbackend::export::import_jm_zip::{closure#0}+0x140>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::export_jm_epub",
+          "va": 7009124,
+          "file_offset": 6992740,
+          "before_hex": "97070036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw23, #0x0, 0x6af454 <jmbackend::export::export_jm_epub::{closure#0}+0x1b4>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::export_jm_pdf2",
+          "va": 7018504,
+          "file_offset": 7002120,
+          "before_hex": "d5070036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw21, #0x0, 0x6b1900 <jmbackend::export::export_jm_pdf2::{closure#0}+0x1e0>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::export_jm_jpegs",
+          "va": 7035860,
+          "file_offset": 7019476,
+          "before_hex": "96040036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw22, #0x0, 0x6b5c64 <jmbackend::export::export_jm_jpegs::{closure#0}+0x240>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::export_jm_jmi_single",
+          "va": 7043864,
+          "file_offset": 7027480,
+          "before_hex": "f70a0036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw23, #0x0, 0x6b7c74 <jmbackend::export::export_jm_jmi_single::{closure#0}+0x21c>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::export_jm_zip_single",
+          "va": 7052952,
+          "file_offset": 7036568,
+          "before_hex": "f70a0036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw23, #0x0, 0x6b9ff4 <jmbackend::export::export_jm_zip_single::{closure#0}+0x21c>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::export_jm_epub_single",
+          "va": 7062032,
+          "file_offset": 7045648,
+          "before_hex": "f70a0036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw23, #0x0, 0x6bc36c <jmbackend::export::export_jm_epub_single::{closure#0}+0x21c>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::export_cbzs_zip_single",
+          "va": 7071184,
+          "file_offset": 7054800,
+          "before_hex": "180b0036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw24, #0x0, 0x6be730 <jmbackend::export::export_cbzs_zip_single::{closure#0}+0x268>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "export::export_jm_jpegs_zip_single",
+          "va": 7084076,
+          "file_offset": 7067692,
+          "before_hex": "f70a0036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw23, #0x0, 0x6c1988 <jmbackend::export::export_jm_jpegs_zip_single::{closure#0}+0x21c>",
+          "new_asm": "nop",
+          "reason": "Remove only the local Ok(false) import/export refusal; preserve membership state, Pending/Err, parsing and cleanup."
+        },
+        {
+          "name": "database::active_db::page_view_log",
+          "va": 7130076,
+          "file_offset": 7113692,
+          "before_hex": "ed000054",
+          "after_hex": "07000014",
+          "old_asm": "b.le\t0x6ccbf8 <jmbackend::database::active_db::page_view_log::{closure#0}+0x108>",
+          "new_asm": "b\t0x6ccbf8 <jmbackend::database::active_db::page_view_log::{closure#0}+0x108>",
+          "reason": "Allow all requested pages after the existing successful membership lookup; preserve Pending/Err and cleanup."
+        },
+        {
+          "name": "download::start_download",
+          "va": 7431232,
+          "file_offset": 7414848,
+          "before_hex": "97450036",
+          "after_hex": "1f2003d5",
+          "old_asm": "tbz\tw23, #0x0, 0x716cf0 <jmbackend::download::start_download::{closure#0} (.llvm.8274981304579928169)+0x18e4>",
+          "new_asm": "nop",
+          "reason": "Read the configured worker count after Ok(false); preserve Pending/Err, default parsing, scheduler and resource cleanup."
+        }
+      ]
+    },
+    "armeabi-v7a": {
+      "elf_class": 1,
+      "machine": 40,
+      "source_sha256": "05efac7743ee7e6c86667d8b7ffa669185ec42906c6906c6ba8239ece54bb8cc",
+      "patched_sha256": "3c180a15ccfb641be46a80f97c101d902d7c694326e970e479d3d57f7a928f5b",
+      "patches": [
+        {
+          "name": "comic_search",
+          "va": 3817140,
+          "file_offset": 3813044,
+          "before_hex": "06da",
+          "after_hex": "06e0",
+          "old_asm": "bge 0x3a3ec4",
+          "new_asm": "b 0x3a3ec4",
+          "reason": "允许本地非会员分页超过10页；仅将页数比较后的允许分支设为无条件，保留真实会员结果和错误处理。"
+        },
+        {
+          "name": "comics",
+          "va": 3908896,
+          "file_offset": 3904800,
+          "before_hex": "06da",
+          "after_hex": "06e0",
+          "old_asm": "bge 0x3ba530",
+          "new_asm": "b 0x3ba530",
+          "reason": "允许本地非会员分页超过10页；仅将页数比较后的允许分支设为无条件，保留真实会员结果和错误处理。"
+        },
+        {
+          "name": "favorites",
+          "va": 3927610,
+          "file_offset": 3923514,
+          "before_hex": "06da",
+          "after_hex": "06e0",
+          "old_asm": "bge 0x3bee4a",
+          "new_asm": "b 0x3bee4a",
+          "reason": "允许本地非会员分页超过10页；仅将页数比较后的允许分支设为无条件，保留真实会员结果和错误处理。"
+        },
+        {
+          "name": "page_view_log",
+          "va": 4088006,
+          "file_offset": 4083910,
+          "before_hex": "06da",
+          "after_hex": "06e0",
+          "old_asm": "bge 0x3e60d6",
+          "new_asm": "b 0x3e60d6",
+          "reason": "允许本地非会员分页超过10页；仅将页数比较后的允许分支设为无条件，保留真实会员结果和错误处理。"
+        },
+        {
+          "name": "set_download_thread",
+          "va": 3866162,
+          "file_offset": 3862066,
+          "before_hex": "06d4",
+          "after_hex": "06e0",
+          "old_asm": "bmi 0x3afe42",
+          "new_asm": "b 0x3afe42",
+          "reason": "允许 Ok(false) 保存下载并发配置，保留 Pending/Err 与输入和属性保存流程。"
+        },
+        {
+          "name": "load_download_thread",
+          "va": 3867966,
+          "file_offset": 3863870,
+          "before_hex": "04d4",
+          "after_hex": "04e0",
+          "old_asm": "bmi 0x3b054a",
+          "new_asm": "b 0x3b054a",
+          "reason": "允许 Ok(false) 读取已保存下载并发，保留 Pending/Err 与属性缺失或解析失败的原默认值。"
+        },
+        {
+          "name": "start_download",
+          "va": 4302070,
+          "file_offset": 4297974,
+          "before_hex": "01d4",
+          "after_hex": "01e0",
+          "old_asm": "bmi 0x41a4fc",
+          "new_asm": "b 0x41a4fc",
+          "reason": "允许 Ok(false) 在下载运行期读取并发配置，保留 Pending/Err 与真实下载业务逻辑。"
+        },
+        {
+          "name": "init_dart",
+          "va": 3938996,
+          "file_offset": 3934900,
+          "before_hex": "78d5",
+          "after_hex": "00bf",
+          "old_asm": "bpl 0x3c1ba8",
+          "new_asm": "nop",
+          "reason": "Ok(false) 初始化时继续恢复 download_and_export_to 配置；仅移除降级跳转，保留此前 Err 清理分支。"
+        },
+        {
+          "name": "export_jm_jmi",
+          "va": 3979878,
+          "file_offset": 3975782,
+          "before_hex": "06d4",
+          "after_hex": "06e0",
+          "old_asm": "bmi 0x3cba76",
+          "new_asm": "b 0x3cba76",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "export_jm_pdf",
+          "va": 3985028,
+          "file_offset": 3980932,
+          "before_hex": "06d4",
+          "after_hex": "06e0",
+          "old_asm": "bmi 0x3cce94",
+          "new_asm": "b 0x3cce94",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "export_jm_zip",
+          "va": 3995822,
+          "file_offset": 3991726,
+          "before_hex": "06d4",
+          "after_hex": "06e0",
+          "old_asm": "bmi 0x3cf8be",
+          "new_asm": "b 0x3cf8be",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "import_jm_dir",
+          "va": 4000920,
+          "file_offset": 3996824,
+          "before_hex": "06d4",
+          "after_hex": "06e0",
+          "old_asm": "bmi 0x3d0ca8",
+          "new_asm": "b 0x3d0ca8",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "import_jm_jmi",
+          "va": 4002458,
+          "file_offset": 3998362,
+          "before_hex": "09d4",
+          "after_hex": "09e0",
+          "old_asm": "bmi 0x3d12b0",
+          "new_asm": "b 0x3d12b0",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "import_jm_zip",
+          "va": 4008034,
+          "file_offset": 4003938,
+          "before_hex": "09d4",
+          "after_hex": "09e0",
+          "old_asm": "bmi 0x3d2878",
+          "new_asm": "b 0x3d2878",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "export_jm_epub",
+          "va": 4013570,
+          "file_offset": 4009474,
+          "before_hex": "06d4",
+          "after_hex": "06e0",
+          "old_asm": "bmi 0x3d3e12",
+          "new_asm": "b 0x3d3e12",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "export_jm_pdf2",
+          "va": 4018718,
+          "file_offset": 4014622,
+          "before_hex": "06d4",
+          "after_hex": "06e0",
+          "old_asm": "bmi 0x3d522e",
+          "new_asm": "b 0x3d522e",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "export_jm_jpegs",
+          "va": 4029332,
+          "file_offset": 4025236,
+          "before_hex": "06d4",
+          "after_hex": "06e0",
+          "old_asm": "bmi 0x3d7ba4",
+          "new_asm": "b 0x3d7ba4",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "export_jm_jmi_single",
+          "va": 4033316,
+          "file_offset": 4029220,
+          "before_hex": "07d4",
+          "after_hex": "07e0",
+          "old_asm": "bmi 0x3d8b36",
+          "new_asm": "b 0x3d8b36",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "export_jm_zip_single",
+          "va": 4037992,
+          "file_offset": 4033896,
+          "before_hex": "07d4",
+          "after_hex": "07e0",
+          "old_asm": "bmi 0x3d9d7a",
+          "new_asm": "b 0x3d9d7a",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "export_jm_epub_single",
+          "va": 4042668,
+          "file_offset": 4038572,
+          "before_hex": "07d4",
+          "after_hex": "07e0",
+          "old_asm": "bmi 0x3dafbe",
+          "new_asm": "b 0x3dafbe",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "export_cbzs_zip_single",
+          "va": 4047388,
+          "file_offset": 4043292,
+          "before_hex": "07d4",
+          "after_hex": "07e0",
+          "old_asm": "bmi 0x3dc22e",
+          "new_asm": "b 0x3dc22e",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        },
+        {
+          "name": "export_jm_jpegs_zip_single",
+          "va": 4055016,
+          "file_offset": 4050920,
+          "before_hex": "07d4",
+          "after_hex": "07e0",
+          "old_asm": "bmi 0x3ddffa",
+          "new_asm": "b 0x3ddffa",
+          "reason": "允许 Ok(false) 进入本地导入/导出业务；只跳过本地会员拒绝路径，保留 Pending/Err、析构和后续业务校验。"
+        }
+      ]
+    },
+    "x86_64": {
+      "elf_class": 2,
+      "machine": 62,
+      "source_sha256": "39d23268f392df6d25f14518209775d073456f2ecb999680d2996d7a95ff4710",
+      "patched_sha256": "233f5d0941d3573be25d1370ea86679ff3cfa3bb07c14faaa816634cce0fda17",
+      "patches": [
+        {
+          "name": "comic_search",
+          "va": 5859824,
+          "file_offset": 5843440,
+          "before_hex": "7e19",
+          "after_hex": "eb19",
+          "old_asm": "jle\t0x596a0b <jmbackend::comic_search::{closure#0}+0x1bb>",
+          "new_asm": "jmp 0x596a0b",
+          "reason": "Remove the page > 10 rejection after successful membership evaluation."
+        },
+        {
+          "name": "comics",
+          "va": 6012468,
+          "file_offset": 5996084,
+          "before_hex": "7e1f",
+          "after_hex": "eb1f",
+          "old_asm": "jle\t0x5bbe55 <jmbackend::comics::{closure#0}+0x2a5>",
+          "new_asm": "jmp 0x5bbe55",
+          "reason": "Remove the page > 10 rejection after successful membership evaluation."
+        },
+        {
+          "name": "favorites",
+          "va": 6042249,
+          "file_offset": 6025865,
+          "before_hex": "7e1e",
+          "after_hex": "eb1e",
+          "old_asm": "jle\t0x5c32a9 <jmbackend::favorites::{closure#0}+0x209>",
+          "new_asm": "jmp 0x5c32a9",
+          "reason": "Remove the page > 10 rejection after successful membership evaluation."
+        },
+        {
+          "name": "database::active_db::page_view_log",
+          "va": 6354498,
+          "file_offset": 6338114,
+          "before_hex": "7e19",
+          "after_hex": "eb19",
+          "old_asm": "jle\t0x60f65d <jmbackend::database::active_db::page_view_log::{closure#0}+0xed>",
+          "new_asm": "jmp 0x60f65d",
+          "reason": "Remove the page > 10 rejection after successful membership evaluation."
+        },
+        {
+          "name": "set_download_thread",
+          "va": 5941936,
+          "file_offset": 5925552,
+          "before_hex": "0f85a0010000",
+          "after_hex": "909090909090",
+          "old_asm": "jne\t0x5aac56 <jmbackend::set_download_thread::{closure#0}+0x256>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Do not reject the thread-count setter when a successful membership result is false."
+        },
+        {
+          "name": "load_download_thread",
+          "va": 5944597,
+          "file_offset": 5928213,
+          "before_hex": "0f850d010000",
+          "after_hex": "909090909090",
+          "old_asm": "jne\t0x5ab628 <jmbackend::load_download_thread::{closure#0}+0x1d8>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Read the saved thread count after successful membership evaluation even when false; retain error fallback."
+        },
+        {
+          "name": "download::start_download",
+          "va": 8577768,
+          "file_offset": 8561384,
+          "before_hex": "0f8576010000",
+          "after_hex": "909090909090",
+          "old_asm": "jne\t0x82e464 <jmbackend::download::start_download::{closure#0} (.llvm.15534949420621723261)+0x1654>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Use the saved worker count after successful membership evaluation even when false; retain error fallback to one worker."
+        },
+        {
+          "name": "init_dart",
+          "va": 6061492,
+          "file_offset": 6045108,
+          "before_hex": "0f85a4010000",
+          "after_hex": "909090909090",
+          "old_asm": "jne\t0x5c7f5e <jmbackend::init_dart::{closure#0}+0x2f6e>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Restore the saved download-and-export directory after successful membership evaluation even when false; retain error skip and cleanup."
+        },
+        {
+          "name": "export::export_jm_jmi",
+          "va": 6128298,
+          "file_offset": 6111914,
+          "before_hex": "0f847e010000",
+          "after_hex": "909090909090",
+          "old_asm": "je\t0x5d842e <jmbackend::export::export_jm_jmi::{closure#0}+0x27e>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::export_jm_pdf",
+          "va": 6140823,
+          "file_offset": 6124439,
+          "before_hex": "0f84a5010000",
+          "after_hex": "909090909090",
+          "old_asm": "je\t0x5db542 <jmbackend::export::export_jm_pdf::{closure#0}+0x2c2>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::export_jm_zip",
+          "va": 6165674,
+          "file_offset": 6149290,
+          "before_hex": "0f847e010000",
+          "after_hex": "909090909090",
+          "old_asm": "je\t0x5e162e <jmbackend::export::export_jm_zip::{closure#0}+0x27e>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::export_jm_epub",
+          "va": 6199930,
+          "file_offset": 6183546,
+          "before_hex": "0f847e010000",
+          "after_hex": "909090909090",
+          "old_asm": "je\t0x5e9bfe <jmbackend::export::export_jm_epub::{closure#0}+0x27e>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::export_jm_pdf2",
+          "va": 6212398,
+          "file_offset": 6196014,
+          "before_hex": "0f84a0010000",
+          "after_hex": "909090909090",
+          "old_asm": "je\t0x5eccd4 <jmbackend::export::export_jm_pdf2::{closure#0}+0x2b4>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::export_jm_jpegs",
+          "va": 6236331,
+          "file_offset": 6219947,
+          "before_hex": "0f846e010000",
+          "after_hex": "909090909090",
+          "old_asm": "je\t0x5f2a1f <jmbackend::export::export_jm_jpegs::{closure#0}+0x2df>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::export_jm_jmi_single",
+          "va": 6246507,
+          "file_offset": 6230123,
+          "before_hex": "0f85ce010000",
+          "after_hex": "909090909090",
+          "old_asm": "jne\t0x5f523f <jmbackend::export::export_jm_jmi_single::{closure#0}+0x2bf>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::export_jm_zip_single",
+          "va": 6258139,
+          "file_offset": 6241755,
+          "before_hex": "0f85ce010000",
+          "after_hex": "909090909090",
+          "old_asm": "jne\t0x5f7faf <jmbackend::export::export_jm_zip_single::{closure#0}+0x2bf>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::export_jm_epub_single",
+          "va": 6269739,
+          "file_offset": 6253355,
+          "before_hex": "0f85ce010000",
+          "after_hex": "909090909090",
+          "old_asm": "jne\t0x5facff <jmbackend::export::export_jm_epub_single::{closure#0}+0x2bf>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::export_cbzs_zip_single",
+          "va": 6281391,
+          "file_offset": 6265007,
+          "before_hex": "0f85d9010000",
+          "after_hex": "909090909090",
+          "old_asm": "jne\t0x5fda8e <jmbackend::export::export_cbzs_zip_single::{closure#0}+0x2fe>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::export_jm_jpegs_zip_single",
+          "va": 6298411,
+          "file_offset": 6282027,
+          "before_hex": "0f85ce010000",
+          "after_hex": "909090909090",
+          "old_asm": "jne\t0x601cff <jmbackend::export::export_jm_jpegs_zip_single::{closure#0}+0x2bf>",
+          "new_asm": "nop; nop; nop; nop; nop; nop",
+          "reason": "Remove the false-membership export rejection; keep Pending, Err, cleanup and argument validation."
+        },
+        {
+          "name": "export::import_jm_dir",
+          "va": 6178069,
+          "file_offset": 6161685,
+          "before_hex": "752d",
+          "after_hex": "9090",
+          "old_asm": "jne\t0x5e4544 <jmbackend::export::import_jm_dir::{closure#0}+0xf4>",
+          "new_asm": "nop; nop",
+          "reason": "Remove the false-membership import rejection; keep Pending, Err, cleanup and input/path validation."
+        },
+        {
+          "name": "export::import_jm_jmi",
+          "va": 6180177,
+          "file_offset": 6163793,
+          "before_hex": "747a",
+          "after_hex": "9090",
+          "old_asm": "je\t0x5e4dcd <jmbackend::export::import_jm_jmi::{closure#0}+0x16d>",
+          "new_asm": "nop; nop",
+          "reason": "Remove the false-membership import rejection; keep Pending, Err, cleanup and input/archive validation."
+        },
+        {
+          "name": "export::import_jm_zip",
+          "va": 6190049,
+          "file_offset": 6173665,
+          "before_hex": "747a",
+          "after_hex": "9090",
+          "old_asm": "je\t0x5e745d <jmbackend::export::import_jm_zip::{closure#0}+0x16d>",
+          "new_asm": "nop; nop",
+          "reason": "Remove the false-membership import rejection; keep Pending, Err, cleanup and input/archive validation."
+        }
+      ]
+    }
+  }
+}

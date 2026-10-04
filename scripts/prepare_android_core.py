@@ -10,10 +10,10 @@ import struct
 import tempfile
 import urllib.request
 import zipfile
+from patch_android_core import ABIS, load_patch_manifest, patch_library
 
 ROOT = Path(__file__).resolve().parent.parent
 MAX_BYTES = 128 * 1024 * 1024
-ABIS = {'arm64-v8a': (2, 183), 'armeabi-v7a': (1, 40), 'x86_64': (2, 62)}
 
 
 def install(archive, manifest, root):
@@ -24,6 +24,7 @@ def install(archive, manifest, root):
         digest = hashlib.file_digest(stream, 'sha256').hexdigest()
     if digest != manifest['sha256']:
         raise ValueError('Core archive SHA-256 mismatch; no libraries installed')
+    local_patches = load_patch_manifest(manifest, root)
     target = Path(root) / 'android/app/src/main/jniLibs'
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=target.parent, prefix='core-stage-') as temp:
@@ -47,6 +48,14 @@ def install(archive, manifest, root):
                     with output.open('wb') as dest:
                         dest.write(header)
                         shutil.copyfileobj(source, dest)
+        if local_patches is not None:
+            for abi in ABIS:
+                output = stage / abi / 'librust.so'
+                try:
+                    patched = patch_library(output.read_bytes(), local_patches['abis'][abi])
+                except ValueError as error:
+                    raise ValueError(f'{abi}: {error}') from error
+                output.write_bytes(patched)
         # Keep a complete previous tree until the staged tree has been installed.
         # Both renames are on the same filesystem; restore on a failed install.
         ready = stage / 'ready'
@@ -73,6 +82,8 @@ def install(archive, manifest, root):
         if had_previous:
             shutil.rmtree(backup)
     print(f"Installed Android core {manifest['version']} ({digest})")
+    if local_patches is not None:
+        print(f'Applied and verified local core patches ({len(ABIS)} ABIs)')
 
 
 def main():
