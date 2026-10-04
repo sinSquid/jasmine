@@ -47,10 +47,31 @@ def install(archive, manifest, root):
                     with output.open('wb') as dest:
                         dest.write(header)
                         shutil.copyfileobj(source, dest)
-        # Validate every ABI before replacing any installed library.
+        # Keep a complete previous tree until the staged tree has been installed.
+        # Both renames are on the same filesystem; restore on a failed install.
+        ready = stage / 'ready'
+        if target.exists():
+            shutil.copytree(target, ready)
+        else:
+            ready.mkdir()
         for abi in ABIS:
-            (target / abi).mkdir(parents=True, exist_ok=True)
-            os.replace(stage / abi / 'librust.so', target / abi / 'librust.so')
+            (ready / abi).mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(stage / abi / 'librust.so', ready / abi / 'librust.so')
+        backup = target.with_name('jniLibs.previous')
+        if backup.exists():
+            raise RuntimeError(f'Previous recovery directory exists: {backup}; recover it before retrying')
+        had_previous = target.exists()
+        if had_previous:
+            os.replace(target, backup)
+        try:
+            os.replace(ready, target)
+        except OSError:
+            if had_previous:
+                # Keep the backup outside TemporaryDirectory if restoration fails.
+                os.replace(backup, target)
+            raise
+        if had_previous:
+            shutil.rmtree(backup)
     print(f"Installed Android core {manifest['version']} ({digest})")
 
 

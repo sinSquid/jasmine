@@ -1,5 +1,7 @@
 import hashlib
 import json
+import os
+from unittest.mock import patch
 from pathlib import Path
 import struct
 import tempfile
@@ -45,6 +47,25 @@ class CorePreparationTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'architecture'):
             install(self.archive, manifest, self.root)
         self.assertEqual(existing.read_bytes(), b'previous library')
+
+    def test_install_failure_restores_complete_previous_tree(self):
+        manifest = self.make_archive()
+        target = self.root / 'android/app/src/main/jniLibs'
+        for abi in ABIS:
+            dest = target / abi / 'librust.so'
+            dest.parent.mkdir(parents=True)
+            dest.write_bytes(('old-' + abi).encode())
+        original_replace = os.replace
+        def fail_install(source, destination):
+            if Path(source).name == 'ready':
+                raise OSError('injected install failure')
+            return original_replace(source, destination)
+        with patch('prepare_android_core.os.replace', side_effect=fail_install):
+            with self.assertRaisesRegex(OSError, 'injected'):
+                install(self.archive, manifest, self.root)
+        for abi in ABIS:
+            self.assertEqual((target / abi / 'librust.so').read_bytes(), ('old-' + abi).encode())
+        self.assertFalse(target.with_name('jniLibs.previous').exists())
 
     def test_manifest_pins_release_and_checksum(self):
         manifest = json.loads((Path(__file__).resolve().parent.parent / 'ci/android-core.json').read_text())

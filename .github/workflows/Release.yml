@@ -25,6 +25,26 @@ env:
 
 jobs:
 
+  validate:
+    name: Validate client and core installer
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+      - run: flutter pub get
+      - run: dart format --output=none --set-exit-if-changed lib test
+      # Existing warnings are tracked in the audit; compiler errors still fail.
+      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - run: flutter test --timeout 60s
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python3 -m unittest discover -s scripts -p 'test_*.py'
+
+
   ci-pass:
     name: CI is green
     runs-on: ubuntu-latest
@@ -35,6 +55,7 @@ jobs:
       - run: exit 0
 
   check_release:
+    needs: validate
     name: Check release
     runs-on: ubuntu-latest
     outputs:
