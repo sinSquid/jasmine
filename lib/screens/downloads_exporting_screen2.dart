@@ -6,8 +6,6 @@ import 'package:jasmine/basic/methods.dart';
 
 import '../basic/commons.dart';
 import '../configs/export_path.dart';
-import '../configs/export_rename.dart';
-import '../configs/is_pro.dart';
 import 'components/content_loading.dart';
 import 'components/right_click_pop.dart';
 
@@ -49,9 +47,11 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
   }
 
   void _onMessageChange(event) {
-    setState(() {
-      exportMessage = event;
-    });
+    if (mounted) {
+      setState(() {
+        exportMessage = event;
+      });
+    }
   }
 
   Widget _body() {
@@ -78,41 +78,34 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
           title: const Text("导出后删除原文件"),
           value: deleteExport,
           onChanged: (value) {
-            setState(() {
-              deleteExport = value;
-            });
+            if (mounted) {
+              setState(() {
+                deleteExport = value;
+              });
+            }
           },
         ),
         Container(height: 20),
         MaterialButton(
           onPressed: _exportJpegs,
-          child: Text(
-            "导出成文件夹" + (!isPro ? "\n(发电后使用)" : ""),
-            style: TextStyle(
-              color: !isPro ? Colors.grey : null,
-            ),
+          child: const Text(
+            "导出成文件夹",
             textAlign: TextAlign.center,
           ),
         ),
         Container(height: 20),
         MaterialButton(
           onPressed: _exportPdf2,
-          child: Text(
-            "导出成PDF" + (!isPro ? "\n(发电后使用)" : ""),
-            style: TextStyle(
-              color: !isPro ? Colors.grey : null,
-            ),
+          child: const Text(
+            "导出成PDF",
             textAlign: TextAlign.center,
           ),
         ),
         Container(height: 20),
         MaterialButton(
           onPressed: _exportEpub,
-          child: Text(
-            "导出成EPUB" + (!isPro ? "\n(发电后使用)" : ""),
-            style: TextStyle(
-              color: !isPro ? Colors.grey : null,
-            ),
+          child: const Text(
+            "导出成EPUB",
             textAlign: TextAlign.center,
           ),
         ),
@@ -122,25 +115,24 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
   }
 
   _exportJpegs() async {
-    if (!isPro) {
-      defaultToast(context, "请先发电鸭");
-      return;
-    }
     late String? path;
     try {
       path = Platform.isIOS
           ? await methods.iosGetDocumentDir()
           : await chooseFolder(context);
     } catch (e) {
-      defaultToast(context, "$e");
+      if (mounted) defaultToast(context, "$e");
       return;
     }
     debugPrient("path $path");
+    if (!mounted) return;
     if (path != null) {
       try {
-        setState(() {
-          exporting = true;
-        });
+        if (mounted) {
+          setState(() {
+            exporting = true;
+          });
+        }
         await methods.export_jm_jpegs(
           widget.idList,
           path,
@@ -151,34 +143,36 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
         e = err;
         exportFail = true;
       } finally {
-        setState(() {
-          exporting = false;
-        });
+        if (mounted) {
+          setState(() {
+            exporting = false;
+          });
+        }
       }
     }
   }
 
   _exportPdf2() async {
-    if (!isPro) {
-      defaultToast(context, "请先发电鸭");
-      return;
-    }
     late String? path;
     try {
       path = Platform.isIOS
           ? await methods.iosGetDocumentDir()
           : await chooseFolder(context);
     } catch (e) {
-      defaultToast(context, "$e");
+      if (mounted) defaultToast(context, "$e");
       return;
     }
     debugPrient("path $path");
+    if (!mounted) return;
     if (path != null) {
       try {
-        setState(() {
-          exporting = true;
-        });
+        if (mounted) {
+          setState(() {
+            exporting = true;
+          });
+        }
         for (var id in widget.idList) {
+          if (!mounted) return;
           await methods.export_jm_pdf2(
             id,
             path,
@@ -190,33 +184,34 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
         e = err;
         exportFail = true;
       } finally {
-        setState(() {
-          exporting = false;
-        });
+        if (mounted) {
+          setState(() {
+            exporting = false;
+          });
+        }
       }
     }
   }
 
   _exportEpub() async {
-    if (!isPro) {
-      defaultToast(context, "请先发电鸭");
-      return;
-    }
     late String? path;
     try {
       path = Platform.isIOS
           ? await methods.iosGetDocumentDir()
           : await chooseFolder(context);
     } catch (e) {
-      defaultToast(context, "$e");
+      if (mounted) defaultToast(context, "$e");
       return;
     }
     debugPrient("path $path");
+    if (!mounted) return;
     if (path != null) {
       try {
-        setState(() {
-          exporting = true;
-        });
+        if (mounted) {
+          setState(() {
+            exporting = true;
+          });
+        }
         await methods.export_jm_epub(
           widget.idList,
           path,
@@ -227,9 +222,11 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
         e = err;
         exportFail = true;
       } finally {
-        setState(() {
-          exporting = false;
-        });
+        if (mounted) {
+          setState(() {
+            exporting = false;
+          });
+        }
       }
     }
   }

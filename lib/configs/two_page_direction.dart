@@ -8,7 +8,7 @@ enum TwoPageDirection {
 }
 
 const _propertyName = "twoPageDirection";
-late TwoPageDirection _twoPageDirection;
+TwoPageDirection _twoPageDirection = TwoPageDirection.leftToRight;
 
 Future initTwoPageDirection() async {
   _twoPageDirection = _fromString(await methods.loadProperty(_propertyName));
@@ -56,7 +56,7 @@ Widget twoGalleryDirectionSetting(BuildContext context) {
       return ListTile(
         onTap: () async {
           await chooseTwoPageDirection(context);
-          setState(() {});
+          if (context.mounted) setState(() {});
         },
         title: const Text("双页阅读器方向"),
         subtitle: Text(twoPageDirectionName(_twoPageDirection, context)),
@@ -64,4 +64,3 @@ Widget twoGalleryDirectionSetting(BuildContext context) {
     },
   );
 }
-

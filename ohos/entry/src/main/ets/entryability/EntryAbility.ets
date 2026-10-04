@@ -29,12 +29,24 @@ export default class EntryAbility extends FlutterAbility {
 
   onMethodCall(call: MethodCall, result: MethodResult): void {
     hilog.warn(0, 'onMethodCall', '%{public}s', call.method);
-    hilog.warn(0, 'onMethodCall', '%{public}s', call.args);
     switch (call.method) {
       case 'invoke':
-        invoke(call.args).then((invokeResult) => {
-          result.success(invokeResult)
-        })
+        if (typeof call.args !== 'string') {
+          result.error('invalid_arguments', 'Expected a string', null)
+          return
+        }
+        try {
+          invoke(call.args).then((invokeResult) => {
+            result.success(invokeResult)
+          }).catch(() => {
+            result.error('native_error', 'Native operation failed', null)
+          })
+        } catch (_) {
+          result.error('native_error', 'Native operation failed', null)
+        }
+        break;
+      default:
+        result.notImplemented()
         break;
     }
   }

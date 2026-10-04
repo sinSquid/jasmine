@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
 import '../basic/methods.dart';
-import 'is_pro.dart';
 
 const _propertyName = "webDavSyncSwitch";
 late bool _webDavSyncSwitch;
@@ -29,22 +28,9 @@ Widget webDavSyncSwitchSetting() {
   return StatefulBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
-        title: Text(
-          "开启时自动同步历史记录到WebDAV",
-          style: TextStyle(
-            color: !isPro ? Colors.grey : null,
-          ),
-        ),
-        subtitle: Text(
-          _webDavSyncSwitch ? "是" : "否",
-          style: TextStyle(
-            color: !isPro ? Colors.grey : null,
-          ),
-        ),
+        title: const Text("开启时自动同步历史记录到WebDAV"),
+        subtitle: Text(_webDavSyncSwitch ? "是" : "否"),
         onTap: () async {
-          if (!isPro) {
-            return;
-          }
           await _chooseWebDavSyncSwitch(context);
           setState(() {});
         },

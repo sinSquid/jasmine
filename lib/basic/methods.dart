@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:collection';
+import 'native_call_scheduler.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -18,53 +18,38 @@ class Methods {
 
   static const _channel = MethodChannel("methods");
   static HttpClient httpClient = HttpClient();
-  static const _maxActiveCalls = 4;
-  static const _maxWaitingCalls = 32;
-  static int _activeCalls = 0;
-  static final Queue<Completer<void>> _waitingCalls = Queue();
+  static final _scheduler = NativeCallScheduler();
 
-  Future<dynamic> _callNative(String method, [dynamic arguments]) async {
-    if (_activeCalls < _maxActiveCalls) {
-      _activeCalls++;
-    } else {
-      if (_waitingCalls.length >= _maxWaitingCalls) {
-        throw StateError('原生调用繁忙，请稍后重试');
-      }
-      final turn = Completer<void>();
-      _waitingCalls.addLast(turn);
-      await turn.future;
-    }
-
-    try {
-      return await _channel.invokeMethod(method, arguments);
-    } finally {
-      if (_waitingCalls.isNotEmpty) {
-        _waitingCalls.removeFirst().complete();
-      } else {
-        _activeCalls--;
-      }
-    }
+  Future<dynamic> _callNative(String method,
+      [dynamic arguments, Duration? timeout, Object? serialKey]) {
+    return _scheduler.run(() => _channel.invokeMethod(method, arguments),
+        timeout: timeout ?? const Duration(seconds: 60), serialKey: serialKey);
   }
 
   Future<String> _invoke(String method, dynamic params) async {
-    late String resp;
-    // if (Platform.isLinux) {
-    //   var req = await httpClient.post("127.0.0.1", 52764, "invoke");
-    //   req.add(utf8.encode(jsonEncode({
-    //     "method": method,
-    //     "params": params is String ? params : jsonEncode(params),
-    //   })));
-    //   var rsp = await req.close();
-    //   resp = await rsp.transform(utf8.decoder).join();
-    // } else
-    {
-      resp = await _callNative(
-          "invoke",
-          jsonEncode({
-            "method": method,
-            "params": params is String ? params : jsonEncode(params),
-          }));
-    }
+    final longRunning = method.startsWith('export_') ||
+        method.startsWith('import_') ||
+        method == 'sync_webdav';
+    final Object? serialKey = method == 'save_property'
+        ? 'property:${(params as Map)['k']}'
+        : method == 'delete_property'
+            ? 'property:$params'
+            : method == 'update_view_log'
+                ? 'view-log:${(params as Map)['id']}'
+                : method == 'sync_webdav'
+                    ? 'webdav'
+                    : null;
+    Future<String> invoke() async => await _callNative(
+        'invoke',
+        jsonEncode({
+          'method': method,
+          'params': params is String ? params : jsonEncode(params),
+        }),
+        longRunning ? const Duration(minutes: 30) : const Duration(seconds: 60),
+        serialKey);
+    final String resp = await (longRunning
+        ? NativeCallScheduler.speculative(invoke, isCancelled: () => false)
+        : invoke());
 
     var response = _Response.fromJson(jsonDecode(resp));
     if (response.errorMessage.isNotEmpty) {
@@ -236,12 +221,18 @@ class Methods {
     );
   }
 
-  Future updateViewLog(int id, int lastViewChapterId, int lastViewPage) {
-    return _invoke("update_view_log", {
-      "id": id,
-      "last_view_chapter_id": lastViewChapterId,
-      "last_view_page": lastViewPage,
+  static Future<void> _viewLogSaving = Future.value();
+  Future<void> updateViewLog(int id, int lastViewChapterId, int lastViewPage) {
+    final result = _viewLogSaving.then((_) async {
+      await _invoke("update_view_log", {
+        "id": id,
+        "last_view_chapter_id": lastViewChapterId,
+        "last_view_page": lastViewPage,
+      });
     });
+    _viewLogSaving =
+        result.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    return result;
   }
 
   Future<ViewLog?> findViewLog(int id) async {
@@ -581,7 +572,8 @@ class Methods {
   }
 
   Future<int> load_download_thread() async {
-    return int.parse(await _invoke("load_download_thread", ""));
+    return (int.tryParse(await _invoke("load_download_thread", "")) ?? 1)
+        .clamp(1, 5);
   }
 
   Future set_download_thread(int count) {

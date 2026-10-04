@@ -5,7 +5,8 @@ import 'package:flutter_svg/svg.dart';
 import 'package:jasmine/basic/commons.dart';
 import 'package:jasmine/basic/log.dart';
 import 'dart:io';
-import 'dart:ui' as ui show Codec, ImmutableBuffer;
+import 'dart:ui' as ui show Codec, ImmutableBuffer, TargetImageSize;
+import 'dart:math' as math;
 
 import 'package:jasmine/basic/methods.dart';
 import 'package:jasmine/screens/components/types.dart';
@@ -82,7 +83,8 @@ class PageImageProvider extends ImageProvider<PageImageProvider> {
       PageImageProvider key, ImageDecoderCallback decode) async {
     assert(key == this);
     final path = await methods.jmPageImage(id, imageName);
-    return decode(await ui.ImmutableBuffer.fromFilePath(path));
+    return decode(await ui.ImmutableBuffer.fromFilePath(path),
+        getTargetSize: boundedPageImageSize);
   }
 
   @override
@@ -597,4 +599,14 @@ Widget buildFile(
     },
     child: image,
   );
+}
+
+/// Bound a decoded page to 16 megapixels / 4096 pixels wide. Tall strips keep
+/// their aspect ratio; small images are never upscaled.
+ui.TargetImageSize boundedPageImageSize(int width, int height) {
+  final ratio = math.min(1.0,
+      math.min(4096 / width, math.sqrt(16 * 1024 * 1024 / (width * height))));
+  return ui.TargetImageSize(
+      width: math.max(1, (width * ratio).floor()),
+      height: math.max(1, (height * ratio).floor()));
 }

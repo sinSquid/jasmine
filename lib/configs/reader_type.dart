@@ -10,7 +10,7 @@ enum ReaderType {
 }
 
 const _propertyName = "readerType";
-late ReaderType _readerType;
+ReaderType _readerType = ReaderType.webtoon;
 
 Future initReaderType() async {
   _readerType = _fromString(await methods.loadProperty(_propertyName));

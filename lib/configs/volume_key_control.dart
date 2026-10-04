@@ -6,11 +6,10 @@ import '../basic/commons.dart';
 import '../basic/methods.dart';
 
 const _propertyName = "volumeKeyControl";
-late bool _volumeKeyControl;
+bool _volumeKeyControl = false;
 
 Future<void> initVolumeKeyControl() async {
-  _volumeKeyControl =
-      (await methods.loadProperty(_propertyName)) == "true";
+  _volumeKeyControl = (await methods.loadProperty(_propertyName)) == "true";
 }
 
 bool currentVolumeKeyControl() {

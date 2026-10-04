@@ -3,13 +3,12 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../basic/commons.dart';
 import '../basic/methods.dart';
 
 const String _propertyKey = "export_path";
-late String _currentExportPath;
+String _currentExportPath = "";
 
 Future<String?> initExportPath() async {
   _currentExportPath = await methods.loadProperty(_propertyKey);
@@ -61,7 +60,7 @@ Widget displayExportPathInfo() {
           ListTile(
             onTap: () async {
               await chooseEx(context);
-              setState(() {});
+              if (context.mounted) setState(() {});
             },
             title: const Text("导出路径 (点击可修改)"),
             subtitle: Text(_currentExportPath),

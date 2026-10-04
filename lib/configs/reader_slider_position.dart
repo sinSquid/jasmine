@@ -15,7 +15,7 @@ const _positionNames = {
 };
 
 const _propertyName = "reader_slider_position";
-late ReaderSliderPosition _readerSliderPosition;
+ReaderSliderPosition _readerSliderPosition = ReaderSliderPosition.bottom;
 
 Future initReaderSliderPosition() async {
   _readerSliderPosition = _readerSliderPositionFromString(

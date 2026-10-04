@@ -37,7 +37,7 @@ import 'export_rename.dart';
 import 'disable_recommend_content.dart';
 import 'ignore_upgrade_pop.dart';
 import 'ignore_view_log.dart';
-import 'is_pro.dart';
+import 'dart:async';
 import 'network_api_host.dart';
 import 'network_cdn_host.dart';
 import 'reader_controller_type.dart';
@@ -57,37 +57,40 @@ Future initConfigs(BuildContext context) async {
   await initVersion();
   await initApiHost();
   await initCdnHost();
-  await initPagerControllerMode();
-  await initPagerViewMode();
-  await initReaderType();
-  await initTwoPageDirection();
-  await initReaderDirection();
-  await initReaderControllerType();
-  await initReaderSliderPosition();
-  await initGestureSpeed();
-  await initDragRegionLock();
-  await initReaderZoomScale();
-  await initPagerColumnCount();
-  await initPagerCoverRate();
-  await initAutoClean();
-  await initTheme();
-  await reloadIsPro();
-  await initDisableRecommendContent();
-  await initRecommendLinks();
-  await initExportPath();
-  await initDownloadThreadCount();
-  await initProxy();
-  await initUsingRightClickPop();
-  await initEscToPop();
-  await initComicSealConfig();
-  await initWebDavSyncSwitch();
-  await initWebDavUrl();
-  await initWebDavUserName();
-  await initWebDavPassword();
-  await initVolumeKeyControl();
-  await initNoAnimation();
-  await initDownloadAndExportTo();
-  await initExportRename();
+  final independent = <Future<dynamic> Function()>[
+    initPagerControllerMode,
+    initPagerViewMode,
+    initReaderType,
+    initTwoPageDirection,
+    initReaderDirection,
+    initReaderControllerType,
+    initReaderSliderPosition,
+    initGestureSpeed,
+    initDragRegionLock,
+    initReaderZoomScale,
+    initPagerColumnCount,
+    initPagerCoverRate,
+    initAutoClean,
+    initTheme,
+    initDisableRecommendContent,
+    initExportPath,
+    initDownloadThreadCount,
+    initProxy,
+    initUsingRightClickPop,
+    initEscToPop,
+    initComicSealConfig,
+    initWebDavSyncSwitch,
+    initWebDavUrl,
+    initWebDavUserName,
+    initWebDavPassword,
+    initVolumeKeyControl,
+    initNoAnimation,
+    initDownloadAndExportTo,
+    initExportRename,
+  ];
+  for (var i = 0; i < independent.length; i += 3) {
+    await Future.wait(independent.skip(i).take(3).map((load) => load()));
+  }
   await initLogin(context);
   await initDisplayJmcode();
   await initSearchTitleWords();
@@ -97,5 +100,6 @@ Future initConfigs(BuildContext context) async {
   await initAppOrientation();
   await initIgnoreVewLog();
   await initIgnoreUpgradePop();
+  unawaited(initRecommendLinks());
   if (normalPlatform) autoCheckNewVersion();
 }

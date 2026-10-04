@@ -1,8 +1,6 @@
-import 'package:event/event.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:jasmine/basic/commons.dart';
 import 'package:jasmine/basic/log.dart';
 import 'package:jasmine/basic/methods.dart';
 import 'package:jasmine/configs/pager_controller_mode.dart';
@@ -10,10 +8,7 @@ import 'package:jasmine/screens/comic_info_screen.dart';
 import 'package:jasmine/screens/components/content_builder.dart';
 import 'package:jasmine/screens/components/types.dart';
 
-import '../../configs/is_pro.dart';
 import 'comic_list.dart';
-
-const _noProMax = 10;
 
 class ComicPager extends StatefulWidget {
   final Future<InnerComicPage> Function(int page) onPage;
@@ -82,39 +77,62 @@ class _StreamPager extends StatefulWidget {
 }
 
 class _StreamPagerState extends State<_StreamPager> {
+  static const _windowItems = 1000;
+  int _windowStart = 1;
+  final List<int> _previousWindows = [];
+  bool get _windowFull => _data.length >= _windowItems;
+
+  void _changeWindow(int page, {bool previous = false}) {
+    if (previous) {
+      _previousWindows.removeLast();
+    } else {
+      _previousWindows.add(_windowStart);
+    }
+    _windowStart = page;
+    _nextPage = page;
+    _data.clear();
+    if (_controller.hasClients) _controller.jumpTo(0);
+    _join(replace: true);
+  }
+
   int _maxPage = 1;
   int _nextPage = 1;
   int _total = 0;
 
-  bool get _noPro => !isPro && _nextPage > _noProMax;
-
   var _joining = false;
   var _joinSuccess = true;
+  int _requestId = 0;
 
-  Future _join() async {
+  Future _join({bool replace = false}) async {
+    if (!mounted || (_joining && !replace)) return;
+    final requestId = ++_requestId;
+    final page = _nextPage;
     try {
       setState(() {
         _joining = true;
       });
-      var response = await widget.onPage(_nextPage);
-      if (_nextPage == 1) {
+      var response = await widget.onPage(page);
+      if (!mounted || requestId != _requestId) return;
+      if (page == 1) {
         if (_redirectAid(response.redirectAid, context)) {
           return;
         }
-        if (response.total == 0) {
+        if (response.total <= 0 || response.list.isEmpty) {
           _maxPage = 1;
         } else {
           _maxPage = (response.total / response.list.length).ceil();
         }
         _total = response.total;
       }
-      _nextPage++;
+      if (response.list.isEmpty) _maxPage = page;
+      _nextPage = page + 1;
       _data.addAll(response.list);
       setState(() {
         _joinSuccess = true;
         _joining = false;
       });
     } catch (e, st) {
+      if (!mounted || requestId != _requestId) return;
       debugPrient("$e\n$st");
       setState(() {
         _joinSuccess = false;
@@ -129,10 +147,6 @@ class _StreamPagerState extends State<_StreamPager> {
 
   _jumpPage() {
     if (_total == 0) {
-      return;
-    }
-    if (!isPro) {
-      defaultToast(context, "发电才能跳页哦~");
       return;
     }
     _textEditController.clear();
@@ -170,9 +184,12 @@ class _StreamPagerState extends State<_StreamPager> {
                 if (num == 0 || num > _maxPage) {
                   return;
                 }
+                _previousWindows.clear();
+                _windowStart = num;
                 _data.clear();
+                if (_controller.hasClients) _controller.jumpTo(0);
                 _nextPage = num;
-                _join();
+                _join(replace: true);
               },
               child: const Text('确定'),
             ),
@@ -184,7 +201,6 @@ class _StreamPagerState extends State<_StreamPager> {
 
   @override
   void initState() {
-    proEvent.subscribe(_setState);
     _controller = ScrollController();
     _join();
     super.initState();
@@ -192,14 +208,13 @@ class _StreamPagerState extends State<_StreamPager> {
 
   @override
   void dispose() {
-    proEvent.unsubscribe(_setState);
     _textEditController.dispose();
     _controller.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    if (_joining || _nextPage > _maxPage || _noPro) {
+    if (_joining || _windowFull || _nextPage > _maxPage) {
       return;
     }
     if (_controller.position.pixels + 100 >
@@ -209,21 +224,10 @@ class _StreamPagerState extends State<_StreamPager> {
   }
 
   Widget? _buildLoadingCard() {
-    if (_noPro) {
-      return Card(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.only(top: 10, bottom: 10),
-              child: const Icon(Icons.power_off_outlined),
-            ),
-            const Text(
-              '$_noProMax页以上需要发电鸭',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      );
+    if (!_joining && _windowFull && _nextPage <= _maxPage) {
+      return TextButton(
+          onPressed: () => _changeWindow(_nextPage),
+          child: const Text('继续浏览下一段'));
     }
     if (_joining) {
       return Card(
@@ -266,6 +270,11 @@ class _StreamPagerState extends State<_StreamPager> {
     return Column(
       children: [
         _buildPagerBar(),
+        if (_previousWindows.isNotEmpty)
+          TextButton(
+              onPressed: () =>
+                  _changeWindow(_previousWindows.last, previous: true),
+              child: const Text('返回上一段')),
         Expanded(
           child: ComicList(
             controller: _controller,
@@ -316,10 +325,6 @@ class _StreamPagerState extends State<_StreamPager> {
       ),
     );
   }
-
-  void _setState(EventArgs? args) {
-    setState(() {});
-  }
 }
 
 class _PagerPager extends StatefulWidget {
@@ -346,15 +351,17 @@ class _PagerPagerState extends State<_PagerPager> {
   late final List<ComicSimple> _data = [];
   late Future _pageFuture = _load();
   late Key _pageKey = UniqueKey();
+  int _requestId = 0;
 
   Future<dynamic> _load() async {
-    var response = await widget.onPage(_currentPage);
+    final requestId = ++_requestId;
+    final page = _currentPage;
+    var response = await widget.onPage(page);
+    if (!mounted || requestId != _requestId) return;
+    if (page == 1 && _redirectAid(response.redirectAid, context)) return;
     setState(() {
-      if (_currentPage == 1) {
-        if (_redirectAid(response.redirectAid, context)) {
-          return;
-        }
-        if (response.total == 0) {
+      if (page == 1) {
+        if (response.total <= 0 || response.list.isEmpty) {
           _maxPage = 1;
         } else {
           _maxPage = (response.total / response.list.length).ceil();
@@ -421,10 +428,6 @@ class _PagerPagerState extends State<_PagerPager> {
             children: [
               InkWell(
                 onTap: () {
-                  if (!isPro) {
-                    defaultToast(context, "发电才能跳页哦~");
-                    return;
-                  }
                   _textEditController.clear();
                   showDialog(
                     context: context,
@@ -498,10 +501,6 @@ class _PagerPagerState extends State<_PagerPager> {
                     minWidth: 0,
                     onPressed: () {
                       if (_currentPage < _maxPage) {
-                        if (!isPro && _currentPage + 1 > _noProMax) {
-                          defaultToast(context, "$_noProMax页以上需要发电鸭");
-                          return;
-                        }
                         setState(() {
                           _currentPage = _currentPage + 1;
                           _pageFuture = _load();

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:event/event.dart';
 import 'package:flutter/material.dart';
 import 'package:jasmine/configs/daily_sign.dart';
@@ -53,7 +51,9 @@ Future initLogin(BuildContext context) async {
     debugPrient("$e\n$st");
     _loginState = LoginStatus.loginField;
   } finally {
-    reloadIsPro();
+    reloadIsPro().catchError((Object _) {
+      debugPrient("发电状态刷新失败");
+    });
   }
 }
 

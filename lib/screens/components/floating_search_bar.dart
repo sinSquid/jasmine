@@ -38,11 +38,30 @@ class _FloatingSearchBarScreenState extends State<FloatingSearchBarScreen>
   @override
   void initState() {
     widget.controller._state = this;
+    _animationController.addStatusListener(_onAnimationStatus);
     super.initState();
+  }
+
+  void _onAnimationStatus(AnimationStatus status) {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void didUpdateWidget(covariant FloatingSearchBarScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.controller, widget.controller)) {
+      if (identical(oldWidget.controller._state, this)) {
+        oldWidget.controller._state = null;
+      }
+      widget.controller._state = this;
+    }
   }
 
   @override
   void dispose() {
+    if (identical(widget.controller._state, this)) {
+      widget.controller._state = null;
+    }
     _node.dispose();
     _textEditingController.dispose();
     _animationController.dispose();

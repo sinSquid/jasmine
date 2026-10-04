@@ -1,16 +1,12 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
-import '../basic/commons.dart';
 import '../basic/methods.dart';
 
 const _propertyName = "ignoreVewLog";
-late bool _ignoreVewLog;
+bool _ignoreVewLog = false;
 
 Future<void> initIgnoreVewLog() async {
-  _ignoreVewLog =
-      (await methods.loadProperty(_propertyName)) == "true";
+  _ignoreVewLog = (await methods.loadProperty(_propertyName)) == "true";
 }
 
 bool currentIgnoreVewLog() {

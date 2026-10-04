@@ -38,7 +38,7 @@ class _ComicCommentsListState extends State<ComicCommentsList>
     final response =
         await methods.forum(widget.mode, widget.aid, widget.uid, _page);
     if (_page == 1) {
-      if (response.total == 0) {
+      if (response.total <= 0 || response.list.isEmpty) {
         _maxPage = 1;
       } else {
         _maxPage = (response.total / response.list.length).ceil();
@@ -182,11 +182,13 @@ Widget _buildPostComment(
   return InkWell(
     onTap: () async {
       String? text = await displayTextInputDialog(context, title: '请输入评论内容');
+      if (!context.mounted) return;
       if (text != null && text.isNotEmpty) {
         try {
           final data = await (parentId == null
               ? methods.comment(aid, text)
               : methods.childComment(aid, text, parentId));
+          if (!context.mounted) return;
           if (data.status == "fail") {
             defaultToast(context, data.msg);
           } else {
@@ -195,7 +197,7 @@ Widget _buildPostComment(
           }
         } catch (e, st) {
           debugPrient("$e\n$st");
-          defaultToast(context, "评论失败");
+          if (context.mounted) defaultToast(context, "评论失败");
         }
       }
     },

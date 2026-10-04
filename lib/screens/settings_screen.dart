@@ -31,7 +31,6 @@ import '../configs/disable_recommend_content.dart';
 import '../configs/export_rename.dart';
 import '../configs/ignore_upgrade_pop.dart';
 import '../configs/ignore_view_log.dart';
-import '../configs/is_pro.dart';
 import '../configs/login.dart';
 import '../configs/no_animation.dart';
 import '../configs/proxy.dart';
@@ -82,32 +81,36 @@ class _SettingsState extends State<SettingsScreen> {
     Uint8List imageBytes,
     Size screenSize,
   ) async {
-    final codec = await ui.instantiateImageCodec(imageBytes);
-    final frameInfo = await codec.getNextFrame();
-    final srcImage = frameInfo.image;
-    final srcWidth = srcImage.width.toDouble();
-    final srcHeight = srcImage.height.toDouble();
-
-    final scale = math.min(
-      math.min(screenSize.width / srcWidth, screenSize.height / srcHeight),
-      1.0,
-    );
-    final targetWidth = math.max(1, (srcWidth * scale).round());
-    final targetHeight = math.max(1, (srcHeight * scale).round());
-
-    final resizedCodec = await ui.instantiateImageCodec(
-      imageBytes,
-      targetWidth: targetWidth,
-      targetHeight: targetHeight,
-    );
-    final resizedFrame = await resizedCodec.getNextFrame();
-    final pngData = await resizedFrame.image.toByteData(
-      format: ui.ImageByteFormat.png,
-    );
-    if (pngData == null) {
-      throw StateError("图片编码失败");
+    if (imageBytes.length > 32 * 1024 * 1024) {
+      throw StateError('启动图片不能超过32MB');
     }
-    return base64Encode(pngData.buffer.asUint8List());
+    final buffer = await ui.ImmutableBuffer.fromUint8List(imageBytes);
+    ui.ImageDescriptor? descriptor;
+    ui.Codec? codec;
+    ui.Image? image;
+    try {
+      descriptor = await ui.ImageDescriptor.encoded(buffer);
+      final scale = math.min(
+          1.0,
+          math.min(
+            screenSize.width / descriptor.width,
+            screenSize.height / descriptor.height,
+          ));
+      codec = await descriptor.instantiateCodec(
+        targetWidth: math.max(1, (descriptor.width * scale).round()),
+        targetHeight: math.max(1, (descriptor.height * scale).round()),
+      );
+      image = (await codec.getNextFrame()).image;
+      final pngData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (pngData == null) throw StateError('图片编码失败');
+      return base64Encode(pngData.buffer
+          .asUint8List(pngData.offsetInBytes, pngData.lengthInBytes));
+    } finally {
+      image?.dispose();
+      codec?.dispose();
+      descriptor?.dispose();
+      buffer.dispose();
+    }
   }
 
   Future<void> _pickAndSaveStartupImage(BuildContext context) async {
@@ -118,6 +121,9 @@ class _SettingsState extends State<SettingsScreen> {
         final picked = await picker.pickImage(source: ImageSource.gallery);
         if (picked == null) {
           return;
+        }
+        if (await picked.length() > 32 * 1024 * 1024) {
+          throw StateError('启动图片不能超过32MB');
         }
         imageBytes = await picked.readAsBytes();
       } else {
@@ -133,10 +139,15 @@ class _SettingsState extends State<SettingsScreen> {
         if (file.bytes != null) {
           imageBytes = file.bytes!;
         } else if (file.path != null) {
-          imageBytes = await File(file.path!).readAsBytes();
+          final imageFile = File(file.path!);
+          if (await imageFile.length() > 32 * 1024 * 1024) {
+            throw StateError('启动图片不能超过32MB');
+          }
+          imageBytes = await imageFile.readAsBytes();
         }
       }
 
+      if (!context.mounted) return;
       if (imageBytes == null) {
         defaultToast(context, "未读取到图片");
         return;
@@ -145,10 +156,11 @@ class _SettingsState extends State<SettingsScreen> {
       final size = MediaQuery.of(context).size;
       final base64Data = await _renderPngBase64WithinScreen(imageBytes, size);
       await methods.saveStartupImage(base64Data);
+      if (!context.mounted) return;
       defaultToast(context, _startupImageExists ? "替换启动图成功" : "设置启动图成功");
       await _loadStartupImageState();
     } catch (e) {
-      defaultToast(context, "设置启动图失败 : $e");
+      if (context.mounted) defaultToast(context, "设置启动图失败 : $e");
       print("设置启动图失败 : $e");
     }
   }
@@ -289,12 +301,9 @@ class _SettingsState extends State<SettingsScreen> {
                 if (_startupImageExists) _deleteStartupImageTile(context),
                 const Divider(),
                 disableRecommendContentSetting(),
-                if (isPro) ...[
-                  const Divider(),
-                  autoUpdateCheckSetting(),
-                  ignoreUpgradePopSetting(),
-                  const Divider(),
-                ],
+                const Divider(),
+                autoUpdateCheckSetting(),
+                ignoreUpgradePopSetting(),
                 const Divider(),
                 ignoreVewLogSetting(),
                 const Divider(),

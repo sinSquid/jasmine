@@ -3,7 +3,6 @@ import 'package:jasmine/basic/log.dart';
 import 'package:jasmine/basic/methods.dart';
 import 'package:jasmine/configs/web_dav_url.dart';
 
-import '../configs/is_pro.dart';
 import '../configs/web_dav_password.dart';
 import '../configs/web_dav_sync_switch.dart';
 import '../configs/web_dav_username.dart';
@@ -55,7 +54,7 @@ Future webDavSyncDownload(BuildContext context) async {
 }
 
 Future webDavSyncAuto(BuildContext context) async {
-  if (currentWebDavSyncSwitch() && isPro) {
+  if (currentWebDavSyncSwitch()) {
     await webDavSync(context);
   }
 }

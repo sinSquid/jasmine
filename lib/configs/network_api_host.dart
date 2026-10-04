@@ -3,21 +3,20 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:jasmine/basic/methods.dart';
 
-late String _apiHost;
+String _apiHost = "";
 
 const _base64List = [
   "d3d3LmNkbmJlYS5uZXQ=",
   "d3d3LmNkbmh0aC5uZXQ=",
   "d3d3LmNkbmd3Yy5jYw==",
   "d3d3LmNkbmh0aC5jbHVi",
-]; 
+];
 
-var _apiList = [];
+final List<String> _apiList = List.unmodifiable(
+  _base64List.map((value) => utf8.decode(base64.decode(value))),
+);
 
 Future<void> initApiHost() async {
-  for (var i = 0; i < _base64List.length; i++) {
-    _apiList.add(utf8.decode(base64.decode(_base64List[i])));
-  }
   _apiHost = await methods.loadApiHost();
 }
 
@@ -30,30 +29,32 @@ Future<T?> chooseApiDialog<T>(BuildContext buildContext) async {
       return SimpleDialog(
         title: const Text("API分流"),
         children: [
-          ..._apiList
-            .map(
-              (e) => SimpleDialogOption(
-                child: ApiOptionRow(
-                  e,
-                  key: Key("API:${e}"),
-                ),
-                onPressed: () {
-                  Navigator.of(context).pop(e);
-                },
+          ..._apiList.map(
+            (e) => SimpleDialogOption(
+              child: ApiOptionRow(
+                e,
+                key: Key("API:${e}"),
               ),
-            ),
-            SimpleDialogOption(
-              child: const Text("手动输入"),
-              onPressed: () async {
-                Navigator.of(context).pop(await _manualInputApiHost(context));
-              },
-            ),
-            SimpleDialogOption(
-              child: const Text("取消"),
               onPressed: () {
-                Navigator.of(context).pop(null);
+                Navigator.of(context).pop(e);
               },
             ),
+          ),
+          SimpleDialogOption(
+            child: const Text("手动输入"),
+            onPressed: () async {
+              final value = await _manualInputApiHost(context);
+              if (context.mounted && value != null) {
+                Navigator.of(context).pop(value);
+              }
+            },
+          ),
+          SimpleDialogOption(
+            child: const Text("取消"),
+            onPressed: () {
+              Navigator.of(context).pop(null);
+            },
+          ),
         ],
       );
     },
@@ -62,7 +63,7 @@ Future<T?> chooseApiDialog<T>(BuildContext buildContext) async {
 
 final TextEditingController _controller = TextEditingController();
 
-Future<String> _manualInputApiHost(BuildContext context) async {
+Future<String?> _manualInputApiHost(BuildContext context) async {
   _controller.text = _apiHost;
   return await showDialog(
     context: context,
@@ -196,7 +197,7 @@ Widget apiHostSetting() {
       return ListTile(
         onTap: () async {
           await chooseApiHost(context);
-          setState(() {});
+          if (context.mounted) setState(() {});
         },
         title: const Text("API分流"),
         subtitle: Text(_apiHost),

@@ -4,7 +4,7 @@ import 'package:jasmine/basic/methods.dart';
 const _propertyName = "dragRegionLock";
 const _defaultDragRegionLock = true;
 
-late bool _dragRegionLock;
+bool _dragRegionLock = false;
 
 Future<void> initDragRegionLock() async {
   final value = await methods.loadProperty(_propertyName);

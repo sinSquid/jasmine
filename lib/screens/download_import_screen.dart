@@ -3,13 +3,10 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:filesystem_picker/filesystem_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 import '../basic/commons.dart';
 import '../basic/methods.dart';
 import '../configs/import_notice.dart';
-import '../configs/is_pro.dart';
-import '../configs/android_version.dart';
 import 'components/content_loading.dart';
 import 'components/right_click_pop.dart';
 
@@ -39,9 +36,11 @@ class _DownloadImportScreenState extends State<DownloadImportScreen> {
 
   void _onMessageChange(event) {
     if (event is String) {
-      setState(() {
-        _importMessage = event;
-      });
+      if (mounted) {
+        setState(() {
+          _importMessage = event;
+        });
+      }
     }
   }
 
@@ -88,63 +87,76 @@ class _DownloadImportScreenState extends State<DownloadImportScreen> {
     return MaterialButton(
       height: 80,
       onPressed: () async {
-        if(!await androidMangeStorageRequest()) {
-          defaultToast(context, "申请权限被拒绝");
+        if (!await androidMangeStorageRequest()) {
+          if (mounted) defaultToast(context, "申请权限被拒绝");
+          return;
         }
+        if (!mounted) return;
         String? path;
-        if (Platform.isAndroid) {
-          path = await FilesystemPicker.open(
-            title: 'Open file',
-            context: context,
-            rootDirectory: Directory("/storage/emulated/0"),
-            fsType: FilesystemType.file,
-            folderIconColor: Colors.teal,
-            allowedExtensions: ['.zip', '.jmi'],
-            fileTileSelectMode: FileTileSelectMode.wholeTile,
-          );
-        } else {
-          var ls = await FilePicker.platform.pickFiles(
-            dialogTitle: '选择要导入的文件',
-            allowMultiple: false,
-            type: FileType.custom,
-            allowedExtensions: ['zip', 'jmi'],
-            allowCompression: false,
-          );
-          path = ls != null && ls.count > 0 ? ls.paths[0] : null;
+        try {
+          if (Platform.isAndroid) {
+            path = await FilesystemPicker.open(
+              title: 'Open file',
+              context: context,
+              rootDirectory: Directory("/storage/emulated/0"),
+              fsType: FilesystemType.file,
+              folderIconColor: Colors.teal,
+              allowedExtensions: ['.zip', '.jmi'],
+              fileTileSelectMode: FileTileSelectMode.wholeTile,
+            );
+          } else {
+            var ls = await FilePicker.platform.pickFiles(
+              dialogTitle: '选择要导入的文件',
+              allowMultiple: false,
+              type: FileType.custom,
+              allowedExtensions: ['zip', 'jmi'],
+              allowCompression: false,
+            );
+            path = ls != null && ls.count > 0 ? ls.paths[0] : null;
+          }
+        } catch (e) {
+          if (mounted) defaultToast(context, '选择文件失败');
+          return;
         }
+        if (!mounted) return;
         if (path != null) {
           if (path.endsWith(".jm.zip") || path.endsWith(".jmi")) {
             try {
-              setState(() {
-                _importing = true;
-              });
+              if (mounted) {
+                setState(() {
+                  _importing = true;
+                });
+              }
               if (path.endsWith(".zip")) {
                 await methods.import_jm_zip(path);
               } else if (path.endsWith(".jmi")) {
                 await methods.import_jm_jmi(path);
               }
-              setState(() {
-                _importMessage = "导入成功";
-              });
+              if (mounted) {
+                setState(() {
+                  _importMessage = "导入成功";
+                });
+              }
             } catch (e) {
-              setState(() {
-                _importMessage = "导入失败 $e";
-              });
+              if (mounted) {
+                setState(() {
+                  _importMessage = "导入失败 $e";
+                });
+              }
             } finally {
-              setState(() {
-                _importing = false;
-              });
+              if (mounted) {
+                setState(() {
+                  _importing = false;
+                });
+              }
             }
-          } else if (path.endsWith(".jm.zip")) {
+          } else {
             defaultToast(context, "只能导入.jm.zip的zip压缩包");
           }
         }
       },
-      child: Text(
-        '选择.jm.zip文件进行导入\n选择jmi文件进行导入' + (!isPro ? "\n(发电后使用)" : ""),
-        style: TextStyle(
-          color: !isPro ? Colors.grey : null,
-        ),
+      child: const Text(
+        '选择.jm.zip文件进行导入\n选择jmi文件进行导入',
         textAlign: TextAlign.center,
       ),
     );
@@ -154,41 +166,49 @@ class _DownloadImportScreenState extends State<DownloadImportScreen> {
     return MaterialButton(
       height: 80,
       onPressed: () async {
-        if(!await androidMangeStorageRequest()) {
-          throw Exception("申请权限被拒绝");
+        if (!await androidMangeStorageRequest()) {
+          if (mounted) defaultToast(context, "申请权限被拒绝");
+          return;
         }
+        if (!mounted) return;
         late String? path;
         try {
           path = await chooseFolder(context);
         } catch (e) {
-          defaultToast(context, "$e");
+          if (mounted) defaultToast(context, "$e");
           return;
         }
+        if (!mounted) return;
         if (path != null) {
           try {
-            setState(() {
-              _importing = true;
-            });
+            if (mounted) {
+              setState(() {
+                _importing = true;
+              });
+            }
             await methods.import_jm_dir(path);
-            setState(() {
-              _importMessage = "导入成功";
-            });
+            if (mounted) {
+              setState(() {
+                _importMessage = "导入成功";
+              });
+            }
           } catch (e) {
-            setState(() {
-              _importMessage = "导入失败 $e";
-            });
+            if (mounted) {
+              setState(() {
+                _importMessage = "导入失败 $e";
+              });
+            }
           } finally {
-            setState(() {
-              _importing = false;
-            });
+            if (mounted) {
+              setState(() {
+                _importing = false;
+              });
+            }
           }
         }
       },
-      child: Text(
-        '选择文件夹\n(导入里面所有的zip/jmi)' + (!isPro ? "\n(发电后使用)" : ""),
-        style: TextStyle(
-          color: !isPro ? Colors.grey : null,
-        ),
+      child: const Text(
+        '选择文件夹\n(导入里面所有的zip/jmi)',
         textAlign: TextAlign.center,
       ),
     );

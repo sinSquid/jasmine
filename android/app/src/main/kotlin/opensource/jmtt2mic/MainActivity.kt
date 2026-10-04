@@ -97,26 +97,39 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun saveImageFileToGallery(path: String) {
-        BitmapFactory.decodeFile(path)?.let { bitmap ->
-            val contentValues = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, System.currentTimeMillis().toString())
+        val bitmap = BitmapFactory.decodeFile(path)
+            ?: throw IllegalArgumentException("Unable to decode image")
+        var uri: android.net.Uri? = null
+        try {
+            val values = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, "${System.currentTimeMillis()}.jpg")
                 put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) { //this one
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
             }
-            contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-                ?.let { uri ->
-                    contentResolver.openOutputStream(uri)?.use { fos ->
-                        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos)
-                    }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) { //this one
-                        contentValues.clear()
-                        contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
-                        contentResolver.update(uri, contentValues, null, null)
-                    }
+            val inserted = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+                ?: throw java.io.IOException("Unable to create gallery entry")
+            uri = inserted
+            val output = contentResolver.openOutputStream(inserted)
+                ?: throw java.io.IOException("Unable to open gallery entry")
+            output.use {
+                if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)) {
+                    throw java.io.IOException("Unable to encode image")
                 }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val ready = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
+                if (contentResolver.update(inserted, ready, null, null) < 1) {
+                    throw java.io.IOException("Unable to publish gallery entry")
+                }
+            }
+        } catch (e: Exception) {
+            uri?.let { try { contentResolver.delete(it, null, null) } catch (_: Exception) {} }
+            throw e
+        } finally {
+            bitmap.recycle()
         }
     }
 
@@ -228,8 +241,8 @@ class MainActivity : FlutterActivity() {
 
     private fun androidMkdirs(path: String) {
         val dir = File(path)
-        if (!dir.exists()) {
-            dir.mkdirs()
+        if (!dir.isDirectory && !dir.mkdirs()) {
+            throw java.io.IOException("Unable to create directory")
         }
     }
     private fun auth(): Boolean {

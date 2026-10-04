@@ -9,7 +9,7 @@ enum ReaderDirection {
 }
 
 const _propertyName = "readerDirection";
-late ReaderDirection _readerDirection;
+ReaderDirection _readerDirection = ReaderDirection.topToBottom;
 
 Future initReaderDirection() async {
   _readerDirection = _fromString(await methods.loadProperty(_propertyName));

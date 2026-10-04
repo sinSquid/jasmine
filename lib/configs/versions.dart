@@ -83,7 +83,6 @@ String latestDownloadUrl() {
 }
 
 Future autoCheckNewVersion() {
-  // if (!isPro) return Future.value();
   if (_period != 0) {
     // -1 不检查, >0 未到检查时间
     return Future.value();

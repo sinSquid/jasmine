@@ -3,8 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:jasmine/basic/methods.dart';
 
-late String _cdnHost;
-
+String _cdnHost = "";
 
 String get currentCdnHostName => _cdnHost;
 
@@ -20,12 +19,11 @@ const _base64List = [
   "Y2RuLW1zcC5qbWFwaXByb3h5Mi5jYw==",
 ];
 
-var _cdnList = [];
+final List<String> _cdnList = List.unmodifiable(
+  _base64List.map((value) => utf8.decode(base64.decode(value))),
+);
 
 Future<void> initCdnHost() async {
-  for (var i = 0; i < _base64List.length; i++) {
-    _cdnList.add(utf8.decode(base64.decode(_base64List[i])));
-  }
   _cdnHost = await methods.loadCdnHost();
 }
 
@@ -43,7 +41,7 @@ Widget cdnHostSetting() {
       return ListTile(
         onTap: () async {
           await chooseCdnHost(context);
-          setState(() {});
+          if (context.mounted) setState(() {});
         },
         title: const Text("图片分流"),
         subtitle: Text(_cdnHost),
@@ -59,30 +57,32 @@ Future<T?> chooseCdnDialog<T>(BuildContext buildContext) async {
       return SimpleDialog(
         title: const Text("图片分流"),
         children: [
-          ..._cdnList
-            .map(
-              (e) => SimpleDialogOption(
-            child: CdnOptionRow(
-              e,
-              key: Key("CDN:${e}"),
+          ..._cdnList.map(
+            (e) => SimpleDialogOption(
+              child: CdnOptionRow(
+                e,
+                key: Key("CDN:${e}"),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop(e);
+              },
             ),
-            onPressed: () {
-              Navigator.of(context).pop(e);
+          ),
+          SimpleDialogOption(
+            child: const Text("手动输入"),
+            onPressed: () async {
+              final value = await _manualInputApiHost(context);
+              if (context.mounted && value != null) {
+                Navigator.of(context).pop(value);
+              }
             },
           ),
-        ),
-            SimpleDialogOption(
-              child: const Text("手动输入"),
-              onPressed: () async {
-                Navigator.of(context).pop(await _manualInputApiHost(context));
-              },
-            ),
-            SimpleDialogOption(
-              child: const Text("取消"),
-              onPressed: () {
-                Navigator.of(context).pop(null);
-              },
-            ),
+          SimpleDialogOption(
+            child: const Text("取消"),
+            onPressed: () {
+              Navigator.of(context).pop(null);
+            },
+          ),
         ],
       );
     },
@@ -91,7 +91,7 @@ Future<T?> chooseCdnDialog<T>(BuildContext buildContext) async {
 
 final TextEditingController _controller = TextEditingController();
 
-Future<String> _manualInputApiHost(BuildContext context) async {
+Future<String?> _manualInputApiHost(BuildContext context) async {
   _controller.text = _cdnHost;
   return await showDialog(
     context: context,
@@ -150,9 +150,9 @@ class _CdnOptionRowState extends State<CdnOptionRow> {
         FutureBuilder(
           future: _feature,
           builder: (
-              BuildContext context,
-              AsyncSnapshot<int> snapshot,
-              ) {
+            BuildContext context,
+            AsyncSnapshot<int> snapshot,
+          ) {
             if (snapshot.connectionState != ConnectionState.done) {
               return const PingStatus(
                 "测速中",
@@ -210,4 +210,3 @@ class PingStatus extends StatelessWidget {
     );
   }
 }
-

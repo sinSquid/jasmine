@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
 import '../basic/methods.dart';
-import 'is_pro.dart';
 
 const _propertyName = "exportRename";
-late bool _exportRename;
+bool _exportRename = false;
 
 Future<void> initExportRename() async {
   _exportRename = (await methods.loadProperty(_propertyName)) == "true";
@@ -29,22 +28,9 @@ Widget exportRenameSetting() {
   return StatefulBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
-        title: Text(
-          "导出的时候重新命名",
-          style: TextStyle(
-            color: !isPro ? Colors.grey : null,
-          ),
-        ),
-        subtitle: Text(
-          _exportRename ? "是" : "否",
-          style: TextStyle(
-            color: !isPro ? Colors.grey : null,
-          ),
-        ),
+        title: const Text("导出的时候重新命名"),
+        subtitle: Text(_exportRename ? "是" : "否"),
         onTap: () async {
-          if (!isPro) {
-            return;
-          }
           await _chooseExportRename(context);
           setState(() {});
         },

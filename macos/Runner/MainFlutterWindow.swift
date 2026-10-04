@@ -34,10 +34,16 @@ public class MethodsPlugin: NSObject, FlutterPlugin {
             case "invoke":
                 if let params = call.arguments as? String {
                     let chars = params.cString(using: String.Encoding.utf8)
-                    let rsp = invoke_ffi(chars!)
-                    let str = String.init(utf8String: rsp!)
-                    free_str_ffi(rsp!)
-                    result(str)
+                    guard let rsp = invoke_ffi(chars!) else {
+                        result(FlutterError(code: "native_error", message: "Empty native response", details: nil))
+                        return
+                    }
+                    let str = String.init(utf8String: rsp)
+                    free_str_ffi(rsp)
+                    if let value = str { result(value) }
+                        else { result(FlutterError(code: "native_error", message: "Invalid native response", details: nil)) }
+                } else {
+                    result(FlutterError(code: "invalid_arguments", message: "Expected a string", details: nil))
                 }
             default:
                 result(FlutterMethodNotImplemented)

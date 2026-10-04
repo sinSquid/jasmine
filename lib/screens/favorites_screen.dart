@@ -29,9 +29,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       title: "选择文件夹",
     );
     if (f != null) {
-      setState(() {
-        _folderId = f;
-      });
+      if (mounted) {
+        setState(() {
+          _folderId = f;
+        });
+      }
     }
   }
 
@@ -48,9 +50,11 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
       title: "选择排序",
     );
     if (f != null) {
-      setState(() {
-        _sort = f;
-      });
+      if (mounted) {
+        setState(() {
+          _sort = f;
+        });
+      }
       await methods.saveProperty("favorites_sort", f);
     }
   }
@@ -73,20 +77,26 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
     try {
       final sort = await methods.loadProperty("favorites_sort");
       if (sort.isNotEmpty && _sortNameMap.containsKey(sort)) {
-        setState(() {
-          _sort = sort;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _sort = sort;
+            _isLoading = false;
+          });
+        }
       } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (e) {
+      // 使用默认值
+      if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
-    } catch (e) {
-      // 使用默认值
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
@@ -127,11 +137,19 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           : ComicPager(
               key: Key("FAVOUR:$_folderId:$_sort"),
               onPage: (int page) async {
-                final response =
-                    await methods.favorites(_folderId, page, _sort);
-                setState(() {
-                  favData = response.folderList;
-                });
+                final folderId = _folderId;
+                final sort = _sort;
+                final response = await methods.favorites(folderId, page, sort);
+                if (mounted && _folderId == folderId && _sort == sort) {
+                  setState(() {
+                    favData = response.folderList;
+                    _folderMap
+                      ..clear()
+                      ..[0] = "全部"
+                      ..addEntries(response.folderList
+                          .map((f) => MapEntry(f.fid, f.name)));
+                  });
+                }
                 return InnerComicPage(
                     total: response.total, list: response.list);
               },

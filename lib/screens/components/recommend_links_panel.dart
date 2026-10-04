@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../basic/commons.dart';
 import '../../configs/disable_recommend_content.dart';
-import '../../configs/is_pro.dart';
 import '../../configs/recommend_links.dart';
 
 class RecommendLinksPanel extends StatefulWidget {
@@ -42,7 +41,7 @@ class _RecommendLinksPanelState extends State<RecommendLinksPanel> {
     if (links.isEmpty) {
       return const SizedBox.shrink();
     }
-    if (isPro && currentDisableRecommendContent()) {
+    if (currentDisableRecommendContent()) {
       return const SizedBox.shrink();
     }
 
@@ -60,11 +59,11 @@ class _RecommendLinksPanelState extends State<RecommendLinksPanel> {
         children: [
           const SizedBox(height: 6),
           ...links.entries.map((entry) {
-              return ListTile(
-                onTap: () => openUrl(entry.value),
-                title: Text(entry.key),
-              );
-            }),
+            return ListTile(
+              onTap: () => openUrl(entry.value),
+              title: Text(entry.key),
+            );
+          }),
         ],
       ),
     );

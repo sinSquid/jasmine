@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import '../basic/commons.dart';
 import '../basic/methods.dart';
 
-late String _currentProxy;
+String _currentProxy = "";
 
 Future<String?> initProxy() async {
   _currentProxy = await methods.getProxy();
@@ -38,7 +38,7 @@ Widget proxySetting() {
         subtitle: Text(currentProxyName()),
         onTap: () async {
           await inputProxy(context);
-          setState(() {});
+          if (context.mounted) setState(() {});
         },
       );
     },

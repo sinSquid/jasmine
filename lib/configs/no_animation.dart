@@ -1,16 +1,13 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
 import '../basic/methods.dart';
 
 const _propertyName = "noAnimation";
-late bool _noAnimation;
+bool _noAnimation = false;
 
 Future<void> initNoAnimation() async {
-  _noAnimation =
-      (await methods.loadProperty(_propertyName)) == "true";
+  _noAnimation = (await methods.loadProperty(_propertyName)) == "true";
 }
 
 bool currentNoAnimation() {

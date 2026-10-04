@@ -8,7 +8,7 @@
 
 ## 项目边界
 
-- 本仓库包含 Flutter 客户端和 Android、iOS、macOS、Windows、Linux、OpenHarmony 原生桥接，业务核心由 CI 从 `niuhuan/jasmine-rs-core` 获取到 `native/`，不得将未读取的核心实现视为已审查。
+- 本仓库包含 Flutter 客户端和 Android、iOS、macOS、Windows、Linux、OpenHarmony 原生桥接，Android 核心通过 `ci/android-core.json` 与 `scripts/prepare_android_core.py` 安装固定版本的发布 `.so`，其他平台仍需兼容核心库或有权访问的固定源码引用，不得将未读取的核心实现视为已审查。
 - Flutter 基线以 `.fvmrc` 和目标工作流为依据；`pubspec.yaml`、构建与发布工作流的 SDK 约束和工具链存在待核验差异，修改版本前须完成方案确认。
 - `lib/basic/methods.dart` 的通道名、方法名、JSON 参数和返回封装，以及原生 ABI 是跨仓库兼容边界；调整时必须同时核对核心版本和所有受影响平台。
 - `feature.md` 是唯一功能状态事实来源；`README.md` 和 `README-zh.md` 的原有内容必须保留，仅允许新增说明和文档入口，原有功能列表作为历史介绍保留，当前验收状态以 `feature.md` 为准；实现存在但未完成相关测试的条目保持未勾选并说明状态。

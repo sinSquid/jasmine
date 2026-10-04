@@ -22,7 +22,7 @@ Map<String, ReaderControllerType> _readerControllerTypeMap = {
 
 const _defaultController = ReaderControllerType.touchOnce;
 const _propertyName = "reader_controller_type";
-late ReaderControllerType _readerControllerType;
+ReaderControllerType _readerControllerType = ReaderControllerType.touchOnce;
 
 Future<void> initReaderControllerType() async {
   _readerControllerType =

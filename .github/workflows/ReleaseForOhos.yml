@@ -6,6 +6,11 @@ permissions:
 
 on:
   workflow_dispatch:
+    inputs:
+      core_ref:
+        description: 'Exact accessible OHOS core commit SHA (Android .so is incompatible)'
+        type: string
+        required: true
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -21,6 +26,7 @@ jobs:
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: 'niuhuan/jasmine-rs-core'
+          ref: ${{ inputs.core_ref }}
           path: 'native'
       - name: Install rust toolchain
         uses: actions-rs/toolchain@v1
@@ -35,7 +41,8 @@ jobs:
           export OHOS_NDK_HOME=$OHOS_BASE_SDK_HOME
           cd native/jmbackend/platforms/ohos
           make
-          find dist -type f -name "*.so" ! -name "librust" -exec rm -f {} \;
+          find dist -type f -name "*.so" ! -name "librust.so" -exec rm -f {} \;
+          test -n "$(find dist -name librust.so -type f -print -quit)"
       - name: Upload Build Output
         uses: actions/upload-artifact@v4
         with:
@@ -45,7 +52,7 @@ jobs:
   build-and-upload-hap:
     needs: build-core
     runs-on: ubuntu-latest
-    container: ghcr.io/niuhuan/harmony-next-flutter-pipeline-docker/image:latest
+    container: ghcr.io/niuhuan/harmony-next-flutter-pipeline-docker/image:3.22.0-ohos
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -62,7 +69,6 @@ jobs:
       - name: build hap
         run: |
           sed -i 's/  modal_bottom_sheet: \^3.0.0-pre/  modal_bottom_sheet:\n    git:\n      url: https:\/\/github.com\/niuhuan\/modal_bottom_sheet.git\n      ref: ohos\n      path: modal_bottom_sheet/g' pubspec.yaml
-          cp scripts/ohos.images.bak lib/screens/components/images.dart
           cp ci/version.code.txt lib/assets/version.txt
           flutter build hap --target-platform=ohos-arm64
           cd ohos

@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
 import LocalAuthentication
+import Photos
 
 @main
 @objc class AppDelegate: FlutterAppDelegate {
@@ -16,28 +17,30 @@ import LocalAuthentication
                 case "invoke":
                     if let params = call.arguments as? String{
                         let chars = params.cString(using: String.Encoding.utf8)
-                        let rsp = invoke_ffi(chars!)
-                        let response = String.init(utf8String: rsp!)
+                        guard let rsp = invoke_ffi(chars!) else {
+                            result(FlutterError(code: "native_error", message: "Empty native response", details: nil))
+                            return
+                        }
+                        let response = String.init(utf8String: rsp)
                         free_str_ffi(rsp)
-                        result(response)
+                        if let value = response { result(value) }
+                        else { result(FlutterError(code: "native_error", message: "Invalid native response", details: nil)) }
+                    } else {
+                        result(FlutterError(code: "invalid_arguments", message: "Expected a string", details: nil))
                     }
                     break
                 case "saveImageFileToGallery":
-                    if let path = call.arguments as? String{
-                        do {
-                            let fileURL: URL = URL(fileURLWithPath: path)
-                            let imageData = try Data(contentsOf: fileURL)
-                            if let uiImage = UIImage(data: imageData) {
-                                UIImageWriteToSavedPhotosAlbum(uiImage, nil, nil, nil)
-                                result("OK")
-                            }else{
-                                result(FlutterError(code: "", message: "Error loading image ", details: ""))
-                            }
-                        } catch {
-                            result(FlutterError(code: "", message: "Error loading image : \(error)", details: ""))
+                    guard let path = call.arguments as? String else {
+                        result(FlutterError(code: "invalid_arguments", message: "Expected a path", details: nil))
+                        return
+                    }
+                    PHPhotoLibrary.shared().performChanges({
+                        PHAssetChangeRequest.creationRequestForAssetFromImage(atFileURL: URL(fileURLWithPath: path))
+                    }) { success, _ in
+                        DispatchQueue.main.async {
+                            if success { result("OK") }
+                            else { result(FlutterError(code: "save_failed", message: "Unable to save image to Photos", details: nil)) }
                         }
-                    }else{
-                        result(FlutterError(code: "", message: "params error", details: ""))
                     }
                 case "iosGetDocumentDir" :
                     result(documentDirectory)

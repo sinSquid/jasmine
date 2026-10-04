@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jasmine/basic/web_dav_sync.dart';
+import 'package:jasmine/configs/is_pro.dart';
 import 'package:jasmine/configs/web_dav_password.dart';
+import 'package:jasmine/configs/web_dav_sync_switch.dart';
 import 'package:jasmine/configs/web_dav_url.dart';
 import 'package:jasmine/configs/web_dav_username.dart';
 
@@ -61,6 +63,47 @@ void main() {
     expect(find.text('WebDav 同步失败'), findsOneWidget);
     expect(find.textContaining(password), findsNothing);
     expect(logs.join('\n'), isNot(contains(password)));
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('enabled automatic WebDAV sync runs without Pro', (tester) async {
+    isPro = false;
+    var syncCalls = 0;
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      final request = jsonDecode(call.arguments as String) as Map;
+      if (request['method'] == 'load_property') {
+        final values = {
+          'WebDavUrl': 'https://example.invalid/webdav',
+          'WebDavUserName': 'test-user',
+          'WebDavPassword': 'test-password',
+          'webDavSyncSwitch': 'true',
+        };
+        return jsonEncode({
+          'error_message': '',
+          'response_data': values[request['params']] ?? '',
+        });
+      }
+      expect(request['method'], 'sync_webdav');
+      syncCalls++;
+      return jsonEncode({'error_message': '', 'response_data': ''});
+    });
+
+    await initWebDavUrl();
+    await initWebDavUserName();
+    await initWebDavPassword();
+    await initWebDavSyncSwitch();
+
+    late BuildContext context;
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(builder: (builderContext) {
+        context = builderContext;
+        return const SizedBox.shrink();
+      }),
+    ));
+
+    await webDavSyncAuto(context);
+    expect(syncCalls, 1);
     await tester.pump(const Duration(seconds: 5));
     await tester.pumpAndSettle();
   });

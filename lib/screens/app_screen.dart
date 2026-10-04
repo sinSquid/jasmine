@@ -36,9 +36,9 @@ class _AppScreenState extends State<AppScreen> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(Duration.zero, () async {
-      versionPop(context);
-      versionEvent.subscribe(_versionSub);
+    versionEvent.subscribe(_versionSub);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) versionPop(context);
     });
   }
 
@@ -50,7 +50,7 @@ class _AppScreenState extends State<AppScreen> {
   }
 
   _versionSub(_) {
-    versionPop(context);
+    if (mounted) versionPop(context);
   }
 
   var _selectedIndex = 0;

@@ -302,6 +302,7 @@ class _ComicInfoScreenState extends State<ComicInfoScreen> with RouteAware {
     });
     try {
       await methods.setFavorite(data.id);
+      if (!mounted) return;
       setState(() {
         data.isFavorite = !data.isFavorite;
       });
@@ -319,12 +320,16 @@ class _ComicInfoScreenState extends State<ComicInfoScreen> with RouteAware {
         if (v != null && v != 0) {
           await methods.comicFavoriteFolderMove(data.id, v);
         }
-        defaultToast(context, "移动成功");
+        if (mounted && v != null && v != 0) defaultToast(context, "移动成功");
       }
+    } catch (e) {
+      if (mounted) defaultToast(context, "收藏操作失败");
     } finally {
-      setState(() {
-        _favouriteLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _favouriteLoading = false;
+        });
+      }
     }
   }
 }

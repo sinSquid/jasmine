@@ -59,7 +59,7 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
   }
 
   _setState(_) {
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   @override
@@ -74,7 +74,7 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
               title: currentPagerViewModeName,
               onPressed: () async {
                 await choosePagerViewMode(context);
-                setState(() {});
+                if (mounted) setState(() {});
               },
             ),
             Expanded(child: Container()),
@@ -83,7 +83,7 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
               title: currentPagerControllerModeName,
               onPressed: () async {
                 await choosePagerControllerMode(context);
-                setState(() {});
+                if (mounted) setState(() {});
               },
             ),
             Expanded(child: Container()),
@@ -92,7 +92,7 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
               title: pagerCoverRateName(currentPagerCoverRate),
               onPressed: () async {
                 await choosePagerCoverRate(context);
-                setState(() {});
+                if (mounted) setState(() {});
               },
             ),
             Expanded(child: Container()),
@@ -101,7 +101,7 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
               title: "$pagerColumnNumber 列",
               onPressed: () async {
                 await choosePagerColumnCount(context);
-                setState(() {});
+                if (mounted) setState(() {});
               },
             ),
             Expanded(child: Container()),
@@ -117,12 +117,12 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
                 defaultToast(context, "清理中");
                 try {
                   await methods.cleanAllCache();
-                  defaultToast(context, "清理成功");
+                  if (mounted) defaultToast(context, "清理成功");
                 } catch (e) {
                   debugPrient("$e");
-                  defaultToast(context, "清理失败");
+                  if (mounted) defaultToast(context, "清理失败");
                 }
-                setState(() {});
+                if (mounted) setState(() {});
               },
             ),
             Expanded(child: Container()),
@@ -131,7 +131,7 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
               title: autoCleanName(),
               onPressed: () async {
                 await chooseAutoClean(context);
-                setState(() {});
+                if (mounted) setState(() {});
               },
             ),
             Expanded(child: Container()),
@@ -140,7 +140,7 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
               title: currentApiHostName,
               onPressed: () async {
                 await chooseApiHost(context);
-                setState(() {});
+                if (mounted) setState(() {});
               },
             ),
             Expanded(child: Container()),
@@ -149,7 +149,7 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
               title: currentCdnHostName,
               onPressed: () async {
                 await chooseCdnHost(context);
-                setState(() {});
+                if (mounted) setState(() {});
               },
             ),
             Expanded(child: Container()),

@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:jasmine/basic/entities.dart';
 import 'package:jasmine/basic/methods.dart';
 import 'package:jasmine/screens/components/comic_download_card.dart';
 import 'package:jasmine/screens/components/item_builder.dart';
@@ -72,10 +71,15 @@ class _DownloadAlbumScreenState extends State<DownloadAlbumScreen> {
                 ],
           ItemBuilder(
             future: _future,
-            onRefresh: () async {},
+            onRefresh: () async {
+              setState(() {
+                _future = methods.downloadById(widget.album.id);
+              });
+            },
             successBuilder: (BuildContext context,
                 AsyncSnapshot<DownloadCreate?> snapshot) {
-              var data = snapshot.requireData!;
+              final data = snapshot.data;
+              if (data == null) return const Center(child: Text("下载记录不存在"));
               return Column(
                 children: [
                   _buildContinueButton(data),
@@ -157,7 +161,9 @@ class _DownloadAlbumScreenState extends State<DownloadAlbumScreen> {
         }
         var log = snapshot.data;
         if (log != null &&
-            create.chapters.map((e) => e.id).contains(log.lastViewChapterId)) {
+            (create.chapters.map((e) => e.id).contains(log.lastViewChapterId) ||
+                (create.chapters.isEmpty &&
+                    log.lastViewChapterId == create.album.id))) {
           return MyFlatButton(
             title: "继续阅读",
             onPressed: () {
@@ -168,7 +174,12 @@ class _DownloadAlbumScreenState extends State<DownloadAlbumScreen> {
         return MyFlatButton(
           title: "从头开始",
           onPressed: () {
-            _push(create, create.chapters[0].id, 0);
+            _push(
+                create,
+                create.chapters.isEmpty
+                    ? create.album.id
+                    : create.chapters.first.id,
+                0);
           },
         );
       },
