@@ -3,11 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:jasmine/basic/methods.dart';
 import 'package:jasmine/screens/components/comic_pager.dart';
-import 'package:jasmine/screens/components/content_builder.dart';
+import 'package:jasmine/screens/components/comic_loading.dart';
 import 'package:jasmine/screens/components/floating_search_bar.dart';
 
 import '../configs/categories_sort.dart';
 import '../configs/login.dart';
+import '../configs/pager_controller_mode.dart';
 import 'components/browser_bottom_sheet.dart';
 import 'components/actions.dart';
 import 'components/comic_floating_search_bar.dart';
@@ -86,17 +87,28 @@ class _BrowserScreenState extends State<BrowserScreen>
   late Key _key;
   String _slug = "";
   SortBy _sortBy = sortByDefault;
+  int _categoryRequest = 0;
+
+  Future<CategoriesResponse> _loadCategories() {
+    final future = _categories();
+    // A reload may fail before FutureBuilder attaches on the next frame.
+    future.ignore();
+    return future;
+  }
 
   Future<CategoriesResponse> _categories() async {
+    final request = ++_categoryRequest;
     final rsp = await methods.categories();
-    blockStore = rsp.blocks;
-    sortCategories(rsp.categories);
+    if (mounted && request == _categoryRequest) {
+      blockStore = rsp.blocks;
+      sortCategories(rsp.categories);
+    }
     return rsp;
   }
 
   @override
   void initState() {
-    _future = _categories();
+    _future = _loadCategories();
     _key = UniqueKey();
     super.initState();
     categoriesSortEvent.subscribe(_resort);
@@ -110,7 +122,7 @@ class _BrowserScreenState extends State<BrowserScreen>
 
   _resort(_) {
     setState(() {
-      _future = _categories();
+      _future = _loadCategories();
       _key = UniqueKey();
     });
   }
@@ -139,67 +151,162 @@ class _BrowserScreenState extends State<BrowserScreen>
           const BrowserBottomSheetAction(),
         ],
       ),
-      body: ContentBuilder(
+      body: FutureBuilder<CategoriesResponse>(
         key: _key,
         future: _future,
-        onRefresh: () async {
-          setState(() {
-            _future = _categories();
-            _key = UniqueKey();
-          });
-        },
-        successBuilder: (
+        builder: (
           BuildContext context,
           AsyncSnapshot<CategoriesResponse> snapshot,
         ) {
-          final categories = snapshot.requireData.categories;
-          if (categories.isEmpty) return const Center(child: Text('暂无分类'));
-          if (!categories.any((category) => category.slug == _slug)) {
-            _slug = categories[0].slug;
+          final loading = snapshot.connectionState != ConnectionState.done;
+          Widget content;
+          if (loading) {
+            content = const SizedBox.expand();
+          } else if (snapshot.hasError) {
+            content = ContentError(
+              error: snapshot.error,
+              stackTrace: snapshot.stackTrace,
+              onRefresh: () async {
+                setState(() {
+                  _future = _loadCategories();
+                  _key = UniqueKey();
+                });
+              },
+            );
+          } else {
+            content = _buildCategories(snapshot.requireData.categories);
           }
-          return Column(children: [
-            SizedBox(
-              height: 56,
-              child: Container(
-                padding: const EdgeInsets.only(top: 8),
-                color: Theme.of(context).appBarTheme.backgroundColor,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _MTabBar(
-                        categories,
-                        categories
-                            .indexWhere((category) => category.slug == _slug),
-                        (index) {
-                          setState(() {
-                            _slug = categories[index].slug;
-                          });
-                        },
-                      ),
-                    ),
-                    buildOrderSwitch(context, _sortBy, (value) {
-                      setState(() {
-                        _sortBy = value;
-                      });
-                    }),
-                  ],
+          return ComicLoadingTransition(
+            loading: loading,
+            placeholder: const _BrowserPlaceholder(),
+            child: content,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildCategories(List<Categories> categories) {
+    if (categories.isEmpty) return const Center(child: Text('暂无分类'));
+    if (!categories.any((category) => category.slug == _slug)) {
+      _slug = categories[0].slug;
+    }
+    // Bind the request to this category, even if a response is delayed
+    // while the user switches category or sort order.
+    final slug = _slug;
+    final sortBy = _sortBy;
+    return Column(children: [
+      SizedBox(
+        height: 56,
+        child: Container(
+          padding: const EdgeInsets.only(top: 8),
+          color: Theme.of(context).appBarTheme.backgroundColor,
+          child: Row(
+            children: [
+              Expanded(
+                child: _MTabBar(
+                  categories,
+                  categories.indexWhere((category) => category.slug == _slug),
+                  (index) {
+                    setState(() {
+                      _slug = categories[index].slug;
+                    });
+                  },
                 ),
               ),
-            ),
-            Expanded(
-              child: ComicPager(
-                key: Key("$_slug:$_sortBy"),
-                onPage: (int page) async {
-                  final response = await methods.comics(_slug, _sortBy, page);
-                  return InnerComicPage(
-                    total: response.total,
-                    list: response.content,
-                  );
-                },
+              buildOrderSwitch(context, _sortBy, (value) {
+                setState(() {
+                  _sortBy = value;
+                });
+              }),
+            ],
+          ),
+        ),
+      ),
+      Expanded(
+        child: ComicPager(
+          key: Key("$_slug:$_sortBy"),
+          smoothLoading: true,
+          onPage: (int page) async {
+            final response = await methods.comics(slug, sortBy, page);
+            return InnerComicPage(
+              total: response.total,
+              list: response.content,
+            );
+          },
+        ),
+      ),
+    ]);
+  }
+}
+
+class _BrowserPlaceholder extends StatefulWidget {
+  const _BrowserPlaceholder();
+
+  @override
+  State<_BrowserPlaceholder> createState() => _BrowserPlaceholderState();
+}
+
+class _BrowserPlaceholderState extends State<_BrowserPlaceholder> {
+  @override
+  void initState() {
+    super.initState();
+    currentPagerControllerModeEvent.subscribe(_refresh);
+  }
+
+  void _refresh(_) {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    currentPagerControllerModeEvent.unsubscribe(_refresh);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color =
+        Theme.of(context).colorScheme.onSurface.withValues(alpha: .08);
+    Widget bar() => Container(
+        height: 24,
+        decoration: BoxDecoration(
+            color: color, borderRadius: BorderRadius.circular(5)));
+    return Semantics(
+      label: '正在加载分类',
+      child: ExcludeSemantics(
+        child: IgnorePointer(
+          child: Column(children: [
+            SizedBox(
+              height: 56,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(children: [
+                  for (var i = 0; i < 3; i++) ...[
+                    Expanded(child: bar()),
+                    const SizedBox(width: 8),
+                  ],
+                  SizedBox(width: 36, child: bar()),
+                ]),
               ),
             ),
-          ]);
-        },
+            SizedBox(
+              height: currentPagerControllerMode == PagerControllerMode.stream
+                  ? 30
+                  : 50,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                child: Row(children: [
+                  Expanded(child: bar()),
+                  const Spacer(),
+                  Expanded(child: bar()),
+                ]),
+              ),
+            ),
+            const Expanded(child: ComicListPlaceholder()),
+          ]),
+        ),
       ),
     );
   }
