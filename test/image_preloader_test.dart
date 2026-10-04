@@ -4,6 +4,28 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:jasmine/screens/components/image_preloader.dart';
 
 void main() {
+  test('scrolling window loads all seven images with at most two active',
+      () async {
+    final started = <int>[];
+    final pending = <int, Completer<void>>{};
+    final preloader = ImagePreloader((index) {
+      started.add(index);
+      final response = Completer<void>();
+      pending[index] = response;
+      return response.future;
+    }, maxPending: 7);
+    preloader.schedule([11, 12, 13, 14, 15, 16, 9]);
+    expect(started, [11, 12]);
+    for (final index in [11, 12, 13, 14, 15, 16, 9]) {
+      expect(pending.values.where((value) => !value.isCompleted).length,
+          lessThanOrEqualTo(2));
+      pending[index]!.complete();
+      await pumpEventQueue();
+    }
+    expect(started, [11, 12, 13, 14, 15, 16, 9]);
+    preloader.dispose();
+  });
+
   test('preloads at most two images and replaces stale pending work', () async {
     final started = <int>[];
     final pending = <int, Completer<void>>{};

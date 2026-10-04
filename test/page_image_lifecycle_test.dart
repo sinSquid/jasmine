@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:jasmine/screens/components/images.dart';
+import 'package:jasmine/screens/components/fading_reader_image.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -68,7 +69,8 @@ void main() {
 
     expect(requests, ['old', 'new']);
     expect(dimensions, [const Size(1, 1)]);
-    final image = tester.widget<Image>(find.byType(Image));
+    final image =
+        tester.widget<FadingReaderImage>(find.byType(FadingReaderImage));
     expect(image.image, isA<BoundedFileImage>());
     expect((image.image as BoundedFileImage).targetWidth,
         (100 * tester.view.devicePixelRatio).ceil().clamp(1, 4096));

@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:jasmine/basic/entities.dart';
+import 'package:jasmine/basic/methods.dart';
 import 'package:jasmine/configs/reader_type.dart';
 import 'package:jasmine/configs/reader_direction.dart';
 import 'package:jasmine/configs/ignore_view_log.dart';
@@ -23,6 +24,23 @@ void main() {
     testWidgets(
         '$mode updates only its image cell and preloads outside the viewport',
         (tester) async {
+      // Fit two portrait placeholders so a sibling rebuild can be observed.
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(400, 900);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      addTearDown(tester.view.resetPhysicalSize);
+      final directory = (await tester.runAsync(() async {
+        final directory =
+            await Directory.systemTemp.createTemp('jasmine-reader-loading-');
+        final pixels = base64Decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC');
+        // Only nearby files exist; a 1000-page chapter must remain lazy.
+        for (var index = 0; index < 20; index++) {
+          await File('${directory.path}/$index.png').writeAsBytes(pixels);
+        }
+        return directory;
+      }))!;
+      addTearDown(() => directory.delete(recursive: true));
       final dimensions = <String, Completer<String>>{};
       final requested = <String>[];
       messenger.setMockMethodCallHandler(channel, (call) async {
@@ -39,7 +57,7 @@ void main() {
             final name =
                 jsonDecode(request['params'] as String)['image_name'] as String;
             requested.add(name);
-            return reply('/reader-test-$name.png');
+            return reply('${directory.path}/$name.png');
           case 'image_size':
             return dimensions
                 .putIfAbsent(request['params'] as String, Completer<String>.new)
@@ -48,6 +66,7 @@ void main() {
             return reply('');
         }
       });
+      await methods.init();
       await initReaderType();
       await initReaderDirection();
       await initIgnoreVewLog();
@@ -73,6 +92,7 @@ void main() {
           tester.widgetList<JMPageImage>(find.byType(JMPageImage)).toList();
       expect(cells.length, greaterThan(1));
       expect(cells.length, lessThan(20));
+      expect(cells.first.height, closeTo(cells.first.width! / 0.75, 0.001));
       final second = cells[1];
       cells.first.onTrueSize!(const Size(1000, 500));
       await tester.pump();
@@ -81,21 +101,25 @@ void main() {
           .firstWhere((image) => image.imageName == second.imageName);
       expect(identical(second, secondAfter), isTrue,
           reason: 'A size update must not rebuild neighboring image widgets');
-      for (var step = 0; step < 8; step++) {
+      for (var step = 0; step < 20; step++) {
         for (final pending in dimensions.values.toList()) {
           if (!pending.isCompleted)
             pending.complete(reply('{"w":1000,"h":500}'));
         }
         await tester.pump();
+        // Cache hits validate files asynchronously. FakeAsync pumps alone do
+        // not deliver real file-system work or the subsequent decoder events.
+        await tester.runAsync(() => pumpEventQueue());
       }
-      // The viewport is 600 pixels high: index 0/1 fill it. Warmup also fetches
-      // subsequent pages while keeping a 1000-page chapter lazy.
-      expect(requested.toSet().contains('3'), isTrue);
+      // Warmup reaches the sixth following image while the 1000-page chapter
+      // still builds and requests only a small neighborhood.
+      expect(requested.toSet().contains('6'), isTrue);
       expect(requested.toSet().length, lessThan(20));
       await tester.pumpWidget(const SizedBox());
       for (final pending in dimensions.values) {
         if (!pending.isCompleted) pending.complete(reply('{"w":1000,"h":500}'));
       }
+      await tester.runAsync(() => pumpEventQueue());
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     });

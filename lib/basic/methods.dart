@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'image_path_cache.dart';
 import 'native_call_scheduler.dart';
+import 'reader_image_dimensions.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -19,31 +21,59 @@ class Methods {
   static const _channel = MethodChannel("methods");
   static HttpClient httpClient = HttpClient();
   static final _scheduler = NativeCallScheduler();
+  static final _pageImagePaths = ImagePathCache<(int, String)>();
+  static int _pageImageGeneration = 0;
+
+  Future<T> _changingImageStorage<T>(Future<T> Function() action) async {
+    _pageImageGeneration++;
+    readerImageDimensions.clear();
+    try {
+      return await _pageImagePaths.invalidateDuring(action);
+    } finally {
+      // Also discard reads that began during a failed or successful mutation.
+      _pageImageGeneration++;
+      readerImageDimensions.clear();
+    }
+  }
 
   Future<dynamic> _callNative(String method,
-      [dynamic arguments, Duration? timeout, Object? serialKey]) {
+      [dynamic arguments,
+      Duration? timeout,
+      Object? serialKey,
+      Object? sharedKey]) {
     return _scheduler.run(() => _channel.invokeMethod(method, arguments),
-        timeout: timeout ?? const Duration(seconds: 60), serialKey: serialKey);
+        timeout: timeout ?? const Duration(seconds: 60),
+        serialKey: serialKey,
+        sharedKey: sharedKey);
   }
 
   Future<String> _invoke(String method, dynamic params) async {
     final longRunning = method.startsWith('export_') ||
         method.startsWith('import_') ||
         method == 'sync_webdav';
-    final Object? serialKey = (method == 'login' || method == 'pre_login')
-        ? 'session'
-        : method == 'save_property'
-            ? 'property:${(params as Map)['k']}'
-            : method == 'delete_property'
-                ? 'property:$params'
-                : method == 'update_view_log'
-                    ? 'view-log'
-                    : (method == 'clear_view_log' ||
-                            method == 'delete_view_log_by_comic_id')
+    final isPageRead = method == 'jm_page_image';
+    final isPageDelete = method == 'delete_jm_page_image_cache';
+    final imageKey = isPageRead || isPageDelete
+        ? ('page-image', (params as Map)['id'], params['image_name'])
+        : null;
+    final sharedImageKey =
+        imageKey == null ? null : (imageKey, _pageImageGeneration);
+    if (isPageDelete) _scheduler.invalidateShared(sharedImageKey!);
+    final Object? serialKey = imageKey ??
+        ((method == 'login' || method == 'pre_login')
+            ? 'session'
+            : method == 'save_property'
+                ? 'property:${(params as Map)['k']}'
+                : method == 'delete_property'
+                    ? 'property:$params'
+                    : method == 'update_view_log'
                         ? 'view-log'
-                        : method == 'sync_webdav'
-                            ? 'webdav'
-                            : null;
+                        : (method == 'clear_view_log' ||
+                                method == 'delete_view_log_by_comic_id')
+                            ? 'view-log'
+                            : method == 'sync_webdav'
+                                ? 'webdav'
+                                : null);
     Future<String> invoke() async => await _callNative(
         'invoke',
         jsonEncode({
@@ -51,7 +81,8 @@ class Methods {
           'params': params is String ? params : jsonEncode(params),
         }),
         longRunning ? const Duration(minutes: 30) : const Duration(seconds: 60),
-        serialKey);
+        serialKey,
+        isPageRead ? sharedImageKey : null);
     final String resp = await (longRunning
         ? NativeCallScheduler.speculative(invoke, isCancelled: () => false)
         : invoke());
@@ -64,11 +95,11 @@ class Methods {
   }
 
   Future init() {
-    return _invoke("init_dart", "");
+    return _changingImageStorage(() => _invoke("init_dart", ""));
   }
 
   Future init2() {
-    return _invoke("init_dart2", "");
+    return _changingImageStorage(() => _invoke("init_dart2", ""));
   }
 
   Future<Map<String, String>> configLinks() async {
@@ -246,7 +277,7 @@ class Methods {
   }
 
   Future cleanAllCache() async {
-    return _invoke("clean_all_cache", "params");
+    return _changingImageStorage(() => _invoke("clean_all_cache", "params"));
   }
 
   Future<String> jm3x4Cover(int comicId) {
@@ -258,10 +289,13 @@ class Methods {
   }
 
   Future<String> jmPageImage(int id, String imageName) {
-    return _invoke("jm_page_image", {"id": id, "image_name": imageName});
+    return _pageImagePaths.getOrLoad((id, imageName),
+        () => _invoke("jm_page_image", {"id": id, "image_name": imageName}));
   }
 
   Future deleteJmPageImageCache(int id, String imageName) {
+    _pageImagePaths.invalidate((id, imageName));
+    readerImageDimensions.invalidate(id, imageName);
     return _invoke(
       "delete_jm_page_image_cache",
       {"id": id, "image_name": imageName},
@@ -619,7 +653,8 @@ class Methods {
   }
 
   Future setDownloadAndExportTo(String path) async {
-    return await _invoke("set_download_and_export_to", path);
+    return _changingImageStorage(
+        () => _invoke("set_download_and_export_to", path));
   }
 
   Future<int> ping(String idx) async {

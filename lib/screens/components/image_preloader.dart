@@ -4,10 +4,10 @@ import '../../basic/native_call_scheduler.dart';
 
 /// Keeps speculative image work behind the visible page's requests.
 class ImagePreloader {
-  ImagePreloader(this._load);
+  ImagePreloader(this._load, {this.maxPending = 4}) : assert(maxPending > 0);
 
   static const maxConcurrent = 2;
-  static const maxPending = 4;
+  final int maxPending;
 
   final Future<void> Function(int index) _load;
   final Set<int> _active = <int>{};
