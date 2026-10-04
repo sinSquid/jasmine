@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -31,15 +32,15 @@ Future<void> _chooseDisplayJmcode(BuildContext context) async {
 }
 
 Widget displayJmcodeSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("显示漫画代码"),
         subtitle: Text(_displayJmcode ? "是" : "否"),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await _chooseDisplayJmcode(context);
           setState(() {});
-        },
+        }),
       );
     },
   );

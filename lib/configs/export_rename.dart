@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
@@ -25,15 +26,15 @@ Future<void> _chooseExportRename(BuildContext context) async {
 }
 
 Widget exportRenameSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("导出的时候重新命名"),
         subtitle: Text(_exportRename ? "是" : "否"),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await _chooseExportRename(context);
           setState(() {});
-        },
+        }),
       );
     },
   );

@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:event/event.dart';
 import 'package:flutter/material.dart';
 import 'package:jasmine/configs/daily_sign.dart';
@@ -26,6 +27,18 @@ Event get loginEvent => _event;
 LoginStatus get loginStatus => _status;
 
 String get loginMessage => _loginMessage;
+int _sessionRevision = 0;
+int get sessionRevision => _sessionRevision;
+int _favoriteRevision = 0;
+int _beginSession() {
+  final revision = ++_sessionRevision;
+  favData = [];
+  resetDailySignStatus();
+  resetProInfo();
+  _loginMessage = '';
+  _loginState = LoginStatus.logging;
+  return revision;
+}
 
 set _loginState(LoginStatus value) {
   _status = value;
@@ -33,9 +46,10 @@ set _loginState(LoginStatus value) {
 }
 
 Future initLogin(BuildContext context) async {
+  final revision = _beginSession();
   try {
-    _loginState = LoginStatus.logging;
     final preLogin = await methods.preLogin();
+    if (revision != _sessionRevision) return;
     _loginMessage = preLogin.message ?? "";
     if (!preLogin.preSet) {
       _loginState = LoginStatus.notSet;
@@ -47,13 +61,12 @@ Future initLogin(BuildContext context) async {
     } else {
       _loginState = LoginStatus.loginField;
     }
-  } catch (e, st) {
-    debugPrient("$e\n$st");
+  } catch (_) {
+    if (revision != _sessionRevision) return;
+    _loginMessage = '登录失败，请检查账号或网络';
     _loginState = LoginStatus.loginField;
   } finally {
-    reloadIsPro().catchError((Object _) {
-      debugPrient("发电状态刷新失败");
-    });
+    if (revision == _sessionRevision) await _refreshPro();
   }
 }
 
@@ -62,101 +75,125 @@ List<FavoriteFolderItem> favData = [];
 Widget createFavoriteFolderItemTile(BuildContext context) {
   return ListTile(
     title: const Text("创建收藏文件夹"),
-    onTap: () async {
+    onTap: () => runUiAction(context, () async {
       if (loginStatus != LoginStatus.loginSuccess) {
         defaultToast(context, "请先登录");
         return;
       }
+      final revision = sessionRevision;
       var name = await displayTextInputDialog(context,
           title: "创建收藏文件夹", hint: "文件夹名称");
-      if (name == null) {
-        return;
-      }
-      await methods.createFavoriteFolder(name);
-      fav(context);
+      if (!context.mounted ||
+          revision != sessionRevision ||
+          name == null ||
+          name.trim().isEmpty) return;
+      await methods.createFavoriteFolder(name.trim());
+      await fav(context);
       defaultToast(context, "创建成功");
-    },
+    }),
   );
 }
 
 Widget deleteFavoriteFolderItemTile(BuildContext context) {
   return ListTile(
     title: const Text("删除收藏文件夹"),
-    onTap: () async {
+    onTap: () => runUiAction(context, () async {
       if (loginStatus != LoginStatus.loginSuccess) {
         defaultToast(context, "请先登录");
         return;
       }
-      var j = favData.map((i) {
-        return MapEntry(i.name, i.fid);
-      }).toList();
-      j.add(const MapEntry("默认 / 不删除", 0));
+      final revision = sessionRevision;
       var v = await chooseMapDialog<int>(
         context,
         title: "删除资料夹",
-        values: Map.fromEntries(j),
+        values: favoriteFolderChoices(defaultLabel: '默认 / 不删除'),
       );
-      if (v != null && v != 0) {
+      if (context.mounted &&
+          revision == sessionRevision &&
+          v != null &&
+          v != 0) {
         await methods.deleteFavoriteFolder(v);
-        fav(context);
+        await fav(context);
         defaultToast(context, "删除成功");
       }
-    },
+    }),
   );
 }
 
 Widget renameFavoriteFolderItemTile(BuildContext context) {
   return ListTile(
     title: const Text("重命名收藏文件夹"),
-    onTap: () async {
+    onTap: () => runUiAction(context, () async {
       if (loginStatus != LoginStatus.loginSuccess) {
         defaultToast(context, "请先登录");
         return;
       }
-      var j = favData.map((i) {
-        return MapEntry(i.name, i.fid);
-      }).toList();
-      j.add(const MapEntry("默认 / 不重命名", 0));
+      final revision = sessionRevision;
       var v = await chooseMapDialog<int>(
         context,
         title: "重命名资料夹",
-        values: Map.fromEntries(j),
+        values: favoriteFolderChoices(defaultLabel: '默认 / 不重命名'),
       );
-      if (v != null && v != 0) {
+      if (context.mounted &&
+          revision == sessionRevision &&
+          v != null &&
+          v != 0) {
         var name = await displayTextInputDialog(context,
             title: "重命名收藏文件夹", hint: "文件夹名称");
-        if (name == null) {
-          return;
-        }
-        await methods.renameFavoriteFolder(v, name);
-        fav(context);
+        if (!context.mounted ||
+            revision != sessionRevision ||
+            name == null ||
+            name.trim().isEmpty) return;
+        await methods.renameFavoriteFolder(v, name.trim());
+        await fav(context);
         defaultToast(context, "重命名成功");
       }
-    },
+    }),
   );
 }
 
-Future fav(BuildContext buildContext) async {
+Map<String, int> favoriteFolderChoices({String defaultLabel = '默认'}) => {
+      for (final item in favData) '${item.name} (#${item.fid})': item.fid,
+      defaultLabel: 0,
+    };
+
+Future<void> fav(BuildContext buildContext) async {
+  final revision = _sessionRevision;
+  final request = ++_favoriteRevision;
   try {
-    favData = (await methods.favorite()).folderList;
-  } catch (e, st) {
-    debugPrient("$e\n$st");
-    defaultToast(buildContext, "$e");
+    final result = await methods.favorite();
+    if (revision == _sessionRevision &&
+        request == _favoriteRevision &&
+        loginStatus == LoginStatus.loginSuccess) favData = result.folderList;
+  } catch (_) {
+    if (revision == _sessionRevision) defaultToast(buildContext, '收藏夹刷新失败，请重试');
   }
 }
 
-Future login(String username, String password, BuildContext context) async {
+Future<void> _refreshPro() async {
   try {
-    _loginState = LoginStatus.logging;
-    final selfInfo = await methods.login(username, password);
-    _selfInfo = selfInfo;
+    await reloadIsPro();
+  } catch (_) {
+    debugPrient('发电状态刷新失败');
+  }
+}
+
+Future<void> login(
+    String username, String password, BuildContext context) async {
+  final revision = _beginSession();
+  try {
+    final result = await methods.login(username, password);
+    if (revision != _sessionRevision) return;
+    _selfInfo = result;
     _loginState = LoginStatus.loginSuccess;
     checkDailySignStatus(context);
     fav(context);
-  } catch (e, st) {
-    debugPrient("$e\n$st");
+  } catch (_) {
+    if (revision != _sessionRevision) return;
+    _loginMessage = '登录失败，请检查账号或网络';
     _loginState = LoginStatus.loginField;
-    _loginMessage = "$e";
+  } finally {
+    if (revision == _sessionRevision) await _refreshPro();
   }
 }
 
@@ -324,17 +361,27 @@ class _LoginDialogState extends State<_LoginDialog> {
   var _username = "";
   var _password = "";
 
+  bool _loading = true, _saving = false, _loadFailed = false;
+
   @override
   void initState() {
-    Future.delayed(Duration.zero, () async {
+    super.initState();
+    _loadCredentials();
+  }
+
+  Future<void> _loadCredentials() async {
+    try {
       final username = await methods.loadUsername();
       final password = await methods.loadPassword();
-      setState(() {
-        _username = username;
-        _password = password;
-      });
-    });
-    super.initState();
+      if (!mounted) return;
+      _username = username;
+      _password = password;
+      _loadFailed = false;
+    } catch (_) {
+      _loadFailed = true;
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -351,6 +398,17 @@ class _LoginDialogState extends State<_LoginDialog> {
         color: Colors.transparent,
         child: ListView(
           children: [
+            if (_loading) const LinearProgressIndicator(),
+            if (_loadFailed)
+              TextButton(
+                  onPressed: () {
+                    setState(() {
+                      _loading = true;
+                      _loadFailed = false;
+                    });
+                    _loadCredentials();
+                  },
+                  child: const Text('凭据读取失败，点击重试')),
             Row(
               children: [
                 IconButton(
@@ -365,24 +423,26 @@ class _LoginDialogState extends State<_LoginDialog> {
             ListTile(
               title: Text("账号"),
               subtitle: Text(_username == "" ? "未设置" : _username),
-              onTap: () async {
+              enabled: !_loading && !_saving && !_loadFailed,
+              onTap: () => runUiAction(context, () async {
                 String? input = await displayTextInputDialog(
                   context,
                   src: _username,
                   title: '账号',
                   hint: '请输入账号',
                 );
-                if (input != null) {
+                if (mounted && input != null) {
                   setState(() {
                     _username = input;
                   });
                 }
-              },
+              }),
             ),
             ListTile(
               title: const Text("密码"),
               subtitle: Text(_password == "" ? "未设置" : '\u2022' * 10),
-              onTap: () async {
+              enabled: !_loading && !_saving && !_loadFailed,
+              onTap: () => runUiAction(context, () async {
                 String? input = await displayTextInputDialog(
                   context,
                   src: _password,
@@ -390,12 +450,12 @@ class _LoginDialogState extends State<_LoginDialog> {
                   hint: '请输入密码',
                   isPasswd: true,
                 );
-                if (input != null) {
+                if (mounted && input != null) {
                   setState(() {
                     _password = input;
                   });
                 }
-              },
+              }),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -404,11 +464,21 @@ class _LoginDialogState extends State<_LoginDialog> {
                   margin: const EdgeInsets.all(10),
                   child: MaterialButton(
                     color: Colors.orange.shade700,
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-                      await login(_username, _password, context);
-                      await reloadIsPro();
-                    },
+                    onPressed: () => runUiAction(context, () async {
+                      if (_loading || _saving || _loadFailed) return;
+                      setState(() => _saving = true);
+                      try {
+                        await login(_username, _password, context);
+                        if (!mounted) return;
+                        if (loginStatus == LoginStatus.loginSuccess) {
+                          Navigator.of(context).pop();
+                        } else {
+                          defaultToast(context, loginMessage);
+                        }
+                      } finally {
+                        if (mounted) setState(() => _saving = false);
+                      }
+                    }),
                     child: Container(
                       padding: const EdgeInsets.all(10),
                       child: const Text(

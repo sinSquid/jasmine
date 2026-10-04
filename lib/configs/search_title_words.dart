@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -31,15 +32,15 @@ Future<void> _chooseSearchTitleWords(BuildContext context) async {
 }
 
 Widget searchTitleWordsSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("标题中的关键字点击搜索"),
         subtitle: Text(_searchTitleWords ? "是" : "否"),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await _chooseSearchTitleWords(context);
           setState(() {});
-        },
+        }),
       );
     },
   );

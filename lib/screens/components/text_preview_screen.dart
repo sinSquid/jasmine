@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jasmine/configs/app_font_size.dart';
+import '../../basic/commons.dart';
 
 class TextPreviewScreen extends StatefulWidget {
   final String text;
@@ -26,13 +27,7 @@ class _TextPreviewScreenState extends State<TextPreviewScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.copy),
-            onPressed: () {
-              // 复制文本到剪贴板
-              // 这里可以添加复制功能
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('已复制到剪贴板')),
-              );
-            },
+            onPressed: () => copyToClipBoard(context, widget.text),
           ),
         ],
       ),
@@ -48,4 +43,4 @@ class _TextPreviewScreenState extends State<TextPreviewScreen> {
       ),
     );
   }
-} 
+}

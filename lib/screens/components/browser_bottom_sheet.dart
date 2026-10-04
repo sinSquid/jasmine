@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:jasmine/basic/commons.dart';
 import 'package:jasmine/basic/log.dart';
 import 'package:jasmine/basic/methods.dart';
@@ -72,37 +73,37 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
             _bottomIcon(
               icon: Icons.view_quilt,
               title: currentPagerViewModeName,
-              onPressed: () async {
+              onPressed: () => runUiAction(context, () async {
                 await choosePagerViewMode(context);
                 if (mounted) setState(() {});
-              },
+              }),
             ),
             Expanded(child: Container()),
             _bottomIcon(
               icon: Icons.view_day_outlined,
               title: currentPagerControllerModeName,
-              onPressed: () async {
+              onPressed: () => runUiAction(context, () async {
                 await choosePagerControllerMode(context);
                 if (mounted) setState(() {});
-              },
+              }),
             ),
             Expanded(child: Container()),
             _bottomIcon(
               icon: Icons.grid_on_sharp,
               title: pagerCoverRateName(currentPagerCoverRate),
-              onPressed: () async {
+              onPressed: () => runUiAction(context, () async {
                 await choosePagerCoverRate(context);
                 if (mounted) setState(() {});
-              },
+              }),
             ),
             Expanded(child: Container()),
             _bottomIcon(
               icon: Icons.view_column_sharp,
               title: "$pagerColumnNumber 列",
-              onPressed: () async {
+              onPressed: () => runUiAction(context, () async {
                 await choosePagerColumnCount(context);
                 if (mounted) setState(() {});
-              },
+              }),
             ),
             Expanded(child: Container()),
           ],
@@ -113,7 +114,7 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
             _bottomIcon(
               icon: Icons.cleaning_services_rounded,
               title: "清理",
-              onPressed: () async {
+              onPressed: () => runUiAction(context, () async {
                 defaultToast(context, "清理中");
                 try {
                   await methods.cleanAllCache();
@@ -123,34 +124,34 @@ class _BrowserBottomSheetState extends State<_BrowserBottomSheet> {
                   if (mounted) defaultToast(context, "清理失败");
                 }
                 if (mounted) setState(() {});
-              },
+              }),
             ),
             Expanded(child: Container()),
             _bottomIcon(
               icon: Icons.auto_delete_outlined,
               title: autoCleanName(),
-              onPressed: () async {
+              onPressed: () => runUiAction(context, () async {
                 await chooseAutoClean(context);
                 if (mounted) setState(() {});
-              },
+              }),
             ),
             Expanded(child: Container()),
             _bottomIcon(
               icon: Icons.shuffle,
               title: currentApiHostName,
-              onPressed: () async {
+              onPressed: () => runUiAction(context, () async {
                 await chooseApiHost(context);
                 if (mounted) setState(() {});
-              },
+              }),
             ),
             Expanded(child: Container()),
             _bottomIcon(
               icon: Icons.repeat_one,
               title: currentCdnHostName,
-              onPressed: () async {
+              onPressed: () => runUiAction(context, () async {
                 await chooseCdnHost(context);
                 if (mounted) setState(() {});
-              },
+              }),
             ),
             Expanded(child: Container()),
           ],

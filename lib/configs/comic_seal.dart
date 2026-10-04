@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -96,7 +97,7 @@ Future<List<String>?> _showStringArrayEditor(
 }
 
 Widget comicSealCategorySetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       final categories = currentComicSealCategories();
       return ListTile(
@@ -106,7 +107,7 @@ Widget comicSealCategorySetting() {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           final result = await _showStringArrayEditor(
             context,
             title: "按分类封印",
@@ -117,14 +118,14 @@ Widget comicSealCategorySetting() {
             await _saveCategories(result);
             setState(() {});
           }
-        },
+        }),
       );
     },
   );
 }
 
 Widget comicSealTitleWordsSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       final titleWords = currentComicSealTitleWords();
       return ListTile(
@@ -134,7 +135,7 @@ Widget comicSealTitleWordsSetting() {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           final result = await _showStringArrayEditor(
             context,
             title: "按标题关键字封印",
@@ -145,7 +146,7 @@ Widget comicSealTitleWordsSetting() {
             await _saveTitleWords(result);
             setState(() {});
           }
-        },
+        }),
       );
     },
   );

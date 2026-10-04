@@ -30,15 +30,20 @@ class Methods {
     final longRunning = method.startsWith('export_') ||
         method.startsWith('import_') ||
         method == 'sync_webdav';
-    final Object? serialKey = method == 'save_property'
-        ? 'property:${(params as Map)['k']}'
-        : method == 'delete_property'
-            ? 'property:$params'
-            : method == 'update_view_log'
-                ? 'view-log:${(params as Map)['id']}'
-                : method == 'sync_webdav'
-                    ? 'webdav'
-                    : null;
+    final Object? serialKey = (method == 'login' || method == 'pre_login')
+        ? 'session'
+        : method == 'save_property'
+            ? 'property:${(params as Map)['k']}'
+            : method == 'delete_property'
+                ? 'property:$params'
+                : method == 'update_view_log'
+                    ? 'view-log'
+                    : (method == 'clear_view_log' ||
+                            method == 'delete_view_log_by_comic_id')
+                        ? 'view-log'
+                        : method == 'sync_webdav'
+                            ? 'webdav'
+                            : null;
     Future<String> invoke() async => await _callNative(
         'invoke',
         jsonEncode({
@@ -221,18 +226,15 @@ class Methods {
     );
   }
 
-  static Future<void> _viewLogSaving = Future.value();
-  Future<void> updateViewLog(int id, int lastViewChapterId, int lastViewPage) {
-    final result = _viewLogSaving.then((_) async {
-      await _invoke("update_view_log", {
-        "id": id,
-        "last_view_chapter_id": lastViewChapterId,
-        "last_view_page": lastViewPage,
-      });
+  Future<void> updateViewLog(
+      int id, int lastViewChapterId, int lastViewPage) async {
+    // Readers coalesce progress via DebouncedWriter; the shared scheduler
+    // bounds remaining writes and serializes them with delete/clear.
+    await _invoke("update_view_log", {
+      "id": id,
+      "last_view_chapter_id": lastViewChapterId,
+      "last_view_page": lastViewPage,
     });
-    _viewLogSaving =
-        result.then<void>((_) {}, onError: (Object _, StackTrace __) {});
-    return result;
   }
 
   Future<ViewLog?> findViewLog(int id) async {

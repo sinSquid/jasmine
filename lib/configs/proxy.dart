@@ -1,3 +1,5 @@
+import 'package:jasmine/basic/ui_action.dart';
+
 /// 代理设置
 
 import 'package:flutter/material.dart';
@@ -31,15 +33,15 @@ Future<dynamic> inputProxy(BuildContext context) async {
 }
 
 Widget proxySetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("代理服务器"),
         subtitle: Text(currentProxyName()),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await inputProxy(context);
           if (context.mounted) setState(() {});
-        },
+        }),
       );
     },
   );

@@ -1,3 +1,5 @@
+import 'package:jasmine/basic/ui_action.dart';
+
 /// 代理设置
 
 import 'dart:io';
@@ -44,7 +46,7 @@ Future _setExportPath(String folder) async {
 }
 
 Widget displayExportPathInfo() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       if (Platform.isIOS) {
         return Container(
@@ -58,10 +60,10 @@ Widget displayExportPathInfo() {
       return Column(children: [
         if (!Platform.isMacOS)
           ListTile(
-            onTap: () async {
+            onTap: () => runUiAction(context, () async {
               await chooseEx(context);
               if (context.mounted) setState(() {});
-            },
+            }),
             title: const Text("导出路径 (点击可修改)"),
             subtitle: Text(_currentExportPath),
           ),
@@ -103,9 +105,12 @@ Future<String> attachExportPath() async {
   return path;
 }
 
-Future chooseEx(BuildContext context) async {
+Future<bool> chooseEx(BuildContext context) async {
   String? choose = await chooseFolder(context);
   if (choose != null) {
+    if (!context.mounted) return false;
     await _setExportPath(choose);
+    return true;
   }
+  return false;
 }

@@ -13,6 +13,37 @@ import 'package:jasmine/screens/components/types.dart';
 
 import '../file_photo_view_screen.dart';
 
+/// Applies the same decoded-pixel budget to file previews and reader images.
+class BoundedFileImage extends ImageProvider<BoundedFileImage> {
+  final String path;
+  final int? targetWidth;
+  const BoundedFileImage(this.path, {this.targetWidth});
+  @override
+  Future<BoundedFileImage> obtainKey(ImageConfiguration configuration) =>
+      SynchronousFuture(this);
+  @override
+  ImageStreamCompleter loadImage(
+          BoundedFileImage key, ImageDecoderCallback decode) =>
+      MultiFrameImageStreamCompleter(codec: _load(decode), scale: 1);
+  Future<ui.Codec> _load(ImageDecoderCallback decode) async =>
+      decode(await ui.ImmutableBuffer.fromFilePath(path),
+          getTargetSize: (w, h) {
+        final bounded = boundedPageImageSize(w, h);
+        if (targetWidth == null || targetWidth! >= bounded.width!)
+          return bounded;
+        final width = math.max(1, targetWidth!);
+        return ui.TargetImageSize(
+            width: width, height: math.max(1, (h * width / w).floor()));
+      });
+  @override
+  bool operator ==(Object other) =>
+      other is BoundedFileImage &&
+      other.path == path &&
+      other.targetWidth == targetWidth;
+  @override
+  int get hashCode => Object.hash(path, targetWidth);
+}
+
 //JM3x4Cover
 class JM3x4ImageProvider extends ImageProvider<JM3x4ImageProvider> {
   final int comicId;
@@ -267,12 +298,14 @@ class JMPageImage extends StatefulWidget {
   final double? height;
   final Function(Size size)? onTrueSize;
   final bool decodeToDisplayWidth;
+  final Size? knownSize;
 
   const JMPageImage(this.id, this.imageName,
       {Key? key,
       this.width,
       this.height,
       this.onTrueSize,
+      this.knownSize,
       this.decodeToDisplayWidth = false})
       : super(key: key);
 
@@ -283,6 +316,9 @@ class JMPageImage extends StatefulWidget {
 class _JMPageImageState extends State<JMPageImage> {
   Future<String>? _future;
   Key _futureKey = UniqueKey();
+  int _generation = 0;
+  String? _path;
+  bool _reloading = false;
 
   @override
   void initState() {
@@ -299,41 +335,62 @@ class _JMPageImageState extends State<JMPageImage> {
     }
   }
 
-  Future<String> _init() async {
+  Future<String> _init({bool refreshSize = false}) async {
+    final generation = ++_generation;
     final id = widget.id;
     final imageName = widget.imageName;
     final path = await methods.jmPageImage(id, imageName);
     if (mounted &&
+        generation == _generation &&
         widget.id == id &&
         widget.imageName == imageName &&
-        widget.onTrueSize != null) {
+        widget.onTrueSize != null &&
+        (refreshSize || widget.knownSize == null)) {
       final size = await methods.imageSize(path);
       if (mounted &&
+          generation == _generation &&
           widget.id == id &&
           widget.imageName == imageName &&
           widget.onTrueSize != null) {
         widget.onTrueSize!(Size(size.w.toDouble(), size.h.toDouble()));
       }
     }
+    if (generation == _generation) _path = path;
     return path;
   }
 
   void _reload() {
-    if (mounted) {
-      // 先清除旧的 Future，然后创建新的
-      setState(() {
-        _future = null;
-        _futureKey = UniqueKey();
-      });
-      // 在下一帧创建新的 Future，确保 FutureBuilder 完全重建
-      Future.microtask(() {
-        if (mounted) {
-          setState(() {
-            _future = _init();
-          });
+    if (!mounted || _reloading) return;
+    _reloading = true;
+    final generation = ++_generation;
+    final id = widget.id;
+    final name = widget.imageName;
+    final oldPath = _path;
+    final width = widget.decodeToDisplayWidth &&
+            widget.width != null &&
+            widget.width!.isFinite &&
+            widget.width! > 0
+        ? (widget.width! * MediaQuery.devicePixelRatioOf(context))
+            .ceil()
+            .clamp(1, 4096)
+        : null;
+    setState(() {
+      _futureKey = UniqueKey();
+      _future = () async {
+        try {
+          if (oldPath != null)
+            await BoundedFileImage(oldPath, targetWidth: width).evict();
+          await methods.deleteJmPageImageCache(id, name);
+          if (!mounted || generation != _generation) return '';
+          return await _init(refreshSize: true);
+        } finally {
+          _reloading = false;
         }
-      });
-    }
+      }();
+      // A cached failure can complete before the next frame attaches FutureBuilder.
+      // Own that early error while retaining it for the builder's error UI.
+      _future!.ignore();
+    });
   }
 
   @override
@@ -392,6 +449,7 @@ Widget pathFutureImage(
             fit: fit,
             longPressMenuItems: longPressMenuItems,
             maxCacheWidth: maxCacheWidth,
+            onReload: onReload,
           );
         }
         // 其他状态（waiting, active, none）都显示加载状态
@@ -536,22 +594,23 @@ Widget buildFile(
     BuildContext context, String file, double? width, double? height,
     {BoxFit fit = BoxFit.cover,
     List<LongPressMenuItem>? longPressMenuItems,
-    int? maxCacheWidth}) {
+    int? maxCacheWidth,
+    VoidCallback? onReload}) {
   final pixelWidth =
       maxCacheWidth != null && width != null && width.isFinite && width > 0
           ? (width * MediaQuery.devicePixelRatioOf(context))
               .ceil()
               .clamp(1, maxCacheWidth)
           : null;
-  var image = Image.file(
-    File(file),
-    cacheWidth: pixelWidth,
+  var image = Image(
+    image: BoundedFileImage(file, targetWidth: pixelWidth),
     width: width,
     height: height,
     errorBuilder: (a, b, c) {
       debugPrient("$b");
       debugPrient("$c");
-      return buildError(context, width, height);
+      return buildError(context, width, height,
+          onReload: onReload, longPressMenuItems: longPressMenuItems);
     },
     fit: fit,
   );
@@ -575,6 +634,7 @@ Widget buildFile(
           ...longPressMenuItems?.map((e) => e.title) ?? [],
         ],
       );
+      if (!context.mounted) return;
       switch (choose) {
         case '预览图片':
           Navigator.of(context).push(MaterialPageRoute(

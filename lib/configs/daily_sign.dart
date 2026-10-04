@@ -15,6 +15,11 @@ enum DailySignStatus {
 DailySignStatus dailySignStatus = DailySignStatus.unchecked;
 
 final dailySignEvent = Event();
+int _revision = 0;
+void resetDailySignStatus() {
+  _revision++;
+  _setDailySignStatus(DailySignStatus.unchecked);
+}
 
 void _setDailySignStatus(DailySignStatus status) {
   dailySignStatus = status;
@@ -41,17 +46,27 @@ Future<void> checkDailySignStatus(BuildContext context,
     _setDailySignStatus(DailySignStatus.unchecked);
     return;
   }
+  if (dailySignStatus == DailySignStatus.checking) return;
+  final revision = _revision;
+  final session = sessionRevision;
+  final uid = selfInfo.uid;
+  bool current() =>
+      revision == _revision &&
+      session == sessionRevision &&
+      loginStatus == LoginStatus.loginSuccess;
   _setDailySignStatus(DailySignStatus.checking);
   try {
-    final msg = await methods.daily(selfInfo.uid);
+    final msg = await methods.daily(uid);
+    if (!current()) return;
     if (toast) {
       defaultToast(context, msg.isNotEmpty ? msg : "已打卡");
     }
     _setDailySignStatus(DailySignStatus.signed);
-  } catch (e, st) {
-    debugPrient("$e\n$st");
+  } catch (_) {
+    if (!current()) return;
+    debugPrient('打卡失败');
     if (toast) {
-      defaultToast(context, "$e");
+      defaultToast(context, '打卡失败，请重试');
     }
     _setDailySignStatus(DailySignStatus.error);
   }

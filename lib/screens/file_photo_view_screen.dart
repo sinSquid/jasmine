@@ -5,6 +5,7 @@ import 'package:jasmine/basic/commons.dart';
 import 'package:photo_view/photo_view.dart';
 
 import 'components/right_click_pop.dart';
+import 'components/images.dart';
 
 // 预览图片
 class FilePhotoViewScreen extends StatelessWidget {
@@ -28,8 +29,8 @@ class FilePhotoViewScreen extends StatelessWidget {
                   values: [
                     ...Platform.isAndroid || Platform.isIOS
                         ? [
-                      '保存图片到相册',
-                    ]
+                            '保存图片到相册',
+                          ]
                         : [],
                     '保存图片到文件',
                   ],
@@ -44,7 +45,7 @@ class FilePhotoViewScreen extends StatelessWidget {
                 }
               },
               child: PhotoView(
-                imageProvider: FileImage(File(filePath)),
+                imageProvider: BoundedFileImage(filePath),
               ),
             ),
             InkWell(

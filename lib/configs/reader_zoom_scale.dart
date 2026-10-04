@@ -26,26 +26,35 @@ Future<void> initReaderZoomScale() async {
         [1.0, 2.0, 2.0][i]);
   }
   _scales.value = _normalize(values);
+  _savedScales = List.of(_scales.value);
 }
 
-// Serialize snapshots: a slow older save must not overwrite a newer value.
-Future<void> _saving = Future.value();
-Future<void> _save() {
+// Disable all three controls during a save: no unbounded chain of snapshots.
+final _saving = ValueNotifier<bool>(false);
+List<double> _savedScales = [1, 2, 2];
+Future<void> _save() async {
+  if (_saving.value) return;
   final values = List<double>.of(_scales.value);
-  final result = _saving.then((_) async {
+  _saving.value = true;
+  try {
     for (var i = 0; i < _keys.length; i++) {
       await methods.saveProperty(_keys[i], '${values[i]}');
+      _savedScales[i] = values[i];
     }
-  });
-  _saving = result.then<void>((_) {}, onError: (Object _, StackTrace __) {});
-  return result;
+  } catch (_) {
+    _scales.value = _normalize(_savedScales);
+    rethrow;
+  } finally {
+    _saving.value = false;
+  }
 }
 
 Widget _setting(
     int index, String title, double min, double max, int divisions) {
-  return ValueListenableBuilder<List<double>>(
-    valueListenable: _scales,
-    builder: (context, values, _) {
+  return ListenableBuilder(
+    listenable: Listenable.merge([_scales, _saving]),
+    builder: (context, _) {
+      final values = _scales.value;
       final upper = index == 2 ? math.min(max, values[1]) : max;
       return ListTile(
         title: Text('$title : ${values[index].toStringAsFixed(1)}x'),
@@ -54,7 +63,7 @@ Widget _setting(
           min: min,
           max: upper,
           divisions: divisions,
-          onChanged: upper == min
+          onChanged: _saving.value || upper == min
               ? null
               : (value) {
                   final next = List<double>.of(values);

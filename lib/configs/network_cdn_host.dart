@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -36,13 +37,13 @@ Future chooseCdnHost(BuildContext context) async {
 }
 
 Widget cdnHostSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await chooseCdnHost(context);
           if (context.mounted) setState(() {});
-        },
+        }),
         title: const Text("图片分流"),
         subtitle: Text(_cdnHost),
       );
@@ -70,12 +71,12 @@ Future<T?> chooseCdnDialog<T>(BuildContext buildContext) async {
           ),
           SimpleDialogOption(
             child: const Text("手动输入"),
-            onPressed: () async {
+            onPressed: () => runUiAction(context, () async {
               final value = await _manualInputApiHost(context);
               if (context.mounted && value != null) {
                 Navigator.of(context).pop(value);
               }
-            },
+            }),
           ),
           SimpleDialogOption(
             child: const Text("取消"),
@@ -112,9 +113,9 @@ Future<String?> _manualInputApiHost(BuildContext context) async {
             child: const Text("取消"),
           ),
           TextButton(
-            onPressed: () async {
+            onPressed: () => runUiAction(context, () async {
               Navigator.of(context).pop(_controller.text);
-            },
+            }),
             child: const Text("确定"),
           ),
         ],

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import '../basic/commons.dart';
 import '../configs/versions.dart';
 import 'components/content_loading.dart';
-import '../configs/is_pro.dart';
 import '../configs/login.dart';
 import '../configs/network_api_host.dart';
 import '../configs/network_cdn_host.dart';
@@ -37,7 +36,7 @@ class _FirstLoginScreenState extends State<FirstLoginScreen> {
           title: "账号",
           src: _username,
         );
-        if (input != null) {
+        if (mounted && input != null) {
           setState(() {
             _username = input;
           });
@@ -58,7 +57,7 @@ class _FirstLoginScreenState extends State<FirstLoginScreen> {
           isPasswd: true,
           src: _password,
         );
-        if (input != null) {
+        if (mounted && input != null) {
           setState(() {
             _password = input;
           });
@@ -69,22 +68,19 @@ class _FirstLoginScreenState extends State<FirstLoginScreen> {
 
   late final _saveButton = IconButton(
     onPressed: () async {
-      setState(() {
-        _logging = true;
-      });
-      await login(_username, _password, context);
-      await reloadIsPro();
-      if (loginStatus != LoginStatus.loginSuccess) {
-        defaultToast(context, loginMessage);
-        setState(() {
-          _logging = false;
-        });
-      } else {
-        Navigator.pushReplacement(context, MaterialPageRoute(
-          builder: (BuildContext context) {
-            return const AppScreen();
-          },
-        ));
+      if (_logging) return;
+      setState(() => _logging = true);
+      try {
+        await login(_username, _password, context);
+        if (!mounted) return;
+        if (loginStatus != LoginStatus.loginSuccess) {
+          defaultToast(context, loginMessage);
+        } else {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (_) => const AppScreen()));
+        }
+      } finally {
+        if (mounted) setState(() => _logging = false);
       }
     },
     icon: const Icon(Icons.save),

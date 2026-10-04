@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -22,29 +23,29 @@ String get currentDownloadAndExportTo => _currentDownloadAndExportTo;
 
 Widget downloadAndExportToSetting() {
   if (Platform.isIOS) {
-    return StatefulBuilder(
+    return SettingsBuilder(
       builder: (BuildContext context, void Function(void Function()) setState) {
         return SwitchListTile(
           title: const Text("下载时同时导出"),
           subtitle: Text(_currentDownloadAndExportTo),
           value: _currentDownloadAndExportTo.isNotEmpty,
-          onChanged: (e) async {
+          onChanged: (e) => runUiAction(context, () async {
             var root =
                 e ? ((await methods.iosGetDocumentDir()) + "/exports") : "";
             await methods.setDownloadAndExportTo(root);
             _currentDownloadAndExportTo = root;
             setState(() {});
-          },
+          }),
         );
       },
     );
   }
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("下载的同时导出到某个目录(填完整路径)"),
         subtitle: Text(currentDownloadAndExportToName()),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           var result = await chooseListDialog(context,
               values: ["选择新位置", "清除设置"], title: "下载的时候同时导出");
           if (result != null) {
@@ -65,7 +66,7 @@ Widget downloadAndExportToSetting() {
               setState(() {});
             }
           }
-        },
+        }),
       );
     },
   );

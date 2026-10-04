@@ -1,7 +1,6 @@
 package opensource.jmtt2mic
 
 import android.content.ContentValues
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import android.os.Environment
@@ -97,13 +96,19 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun saveImageFileToGallery(path: String) {
-        val bitmap = BitmapFactory.decodeFile(path)
-            ?: throw IllegalArgumentException("Unable to decode image")
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(path, options)
+        val mime = options.outMimeType
+        require(options.outWidth > 0 && options.outHeight > 0 && mime?.startsWith("image/") == true) {
+            "Unable to inspect image"
+        }
+        val extension = android.webkit.MimeTypeMap.getSingleton().getExtensionFromMimeType(mime)
+            ?: throw IllegalArgumentException("Unsupported image format")
         var uri: android.net.Uri? = null
         try {
             val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, "${System.currentTimeMillis()}.jpg")
-                put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+                put(MediaStore.MediaColumns.DISPLAY_NAME, "${System.currentTimeMillis()}.$extension")
+                put(MediaStore.MediaColumns.MIME_TYPE, mime)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES)
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
@@ -115,9 +120,7 @@ class MainActivity : FlutterActivity() {
             val output = contentResolver.openOutputStream(inserted)
                 ?: throw java.io.IOException("Unable to open gallery entry")
             output.use {
-                if (!bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)) {
-                    throw java.io.IOException("Unable to encode image")
-                }
+                java.io.File(path).inputStream().use { source -> source.copyTo(it) }
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 val ready = ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }
@@ -128,8 +131,6 @@ class MainActivity : FlutterActivity() {
         } catch (e: Exception) {
             uri?.let { try { contentResolver.delete(it, null, null) } catch (_: Exception) {} }
             throw e
-        } finally {
-            bitmap.recycle()
         }
     }
 

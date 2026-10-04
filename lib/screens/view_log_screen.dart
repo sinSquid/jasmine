@@ -1,12 +1,8 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:jasmine/basic/commons.dart';
 import 'package:jasmine/basic/methods.dart';
-import 'package:jasmine/screens/components/floating_search_bar.dart';
 
 import 'components/browser_bottom_sheet.dart';
-import 'components/comic_list.dart';
 import 'components/comic_pager.dart';
 import 'components/right_click_pop.dart';
 import 'components/types.dart';
@@ -19,8 +15,27 @@ class ViewLogScreen extends StatefulWidget {
 }
 
 class _ViewLogScreenState extends State<ViewLogScreen> {
-  // random key
-  var key = "HISTORY::" + Random().nextInt(100000).toString();
+  int _revision = 0;
+  bool _mutating = false;
+
+  Future<void> _mutate(Future<dynamic> Function() action,
+      {bool confirm = false}) async {
+    if (!mounted || _mutating) return;
+    setState(() => _mutating = true);
+    try {
+      if (confirm) {
+        final choice = await chooseListDialog(context,
+            values: ['是', '否'], title: '清除所有历史记录?');
+        if (!mounted || choice != '是') return;
+      }
+      await action();
+      if (mounted) setState(() => _revision++);
+    } catch (_) {
+      if (mounted) defaultToast(context, '删除浏览记录失败，请重试');
+    } finally {
+      if (mounted) setState(() => _mutating = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,28 +48,16 @@ class _ViewLogScreenState extends State<ViewLogScreen> {
         title: const Text("浏览记录"),
         actions: [
           IconButton(
-            onPressed: () async {
-              String? choose = await chooseListDialog(
-                context,
-                values: ["是", "否"],
-                title: "清除所有历史记录?",
-              );
-              if ("是" == choose) {
-                await methods.clearViewLog();
-                Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  builder: (BuildContext context) {
-                    return const ViewLogScreen();
-                  },
-                ));
-              }
-            },
+            onPressed: _mutating
+                ? null
+                : () => _mutate(methods.clearViewLog, confirm: true),
             icon: const Icon(Icons.auto_delete),
           ),
           const BrowserBottomSheetAction(),
         ],
       ),
       body: ComicPager(
-        key: Key(key),
+        key: ValueKey(_revision),
         onPage: (int page) async {
           final response = await methods.pageViewLog(page);
           return InnerComicPage(
@@ -65,13 +68,8 @@ class _ViewLogScreenState extends State<ViewLogScreen> {
         longPressMenuItems: [
           ComicLongPressMenuItem(
             "删除浏览记录",
-            (ComicBasic comic) async {
-              defaultToast(context, "删除${comic.name}");
-              await methods.deleteViewLogByComicId(comic.id);
-              setState(() {
-                key = "HISTORY::" + Random().nextInt(100000).toString();
-              });
-            },
+            (ComicBasic comic) =>
+                _mutate(() => methods.deleteViewLogByComicId(comic.id)),
           ),
         ],
       ),

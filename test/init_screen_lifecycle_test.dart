@@ -1,3 +1,7 @@
+import 'package:jasmine/screens/first_login_screen.dart';
+import 'package:jasmine/screens/unlock_browser_screen.dart';
+import 'package:jasmine/screens/calculator_screen.dart';
+import 'package:jasmine/configs/DesktopAuthenticationScreen.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -36,4 +40,56 @@ void main() {
     expect(calledMethods, ['init_dart']);
     expect(tester.takeException(), isNull);
   });
+  for (final password in ['', 'test-password']) {
+    testWidgets(
+        'startup ignores old browser flags and preserves authentication: ${password.isNotEmpty}',
+        (tester) async {
+      rootBundle.clear();
+      final readKeys = <String>[];
+      String reply(String value) =>
+          jsonEncode({'error_message': '', 'response_data': value});
+      messenger.setMockMethodCallHandler(channel, (call) async {
+        if (call.method != 'invoke') return null;
+        final request = jsonDecode(call.arguments as String) as Map;
+        if (request['method'] == 'load_property') {
+          final key = request['params'] as String;
+          readKeys.add(key);
+          return reply({
+                'passed': 'false',
+                'alwaysEnterBrowser': 'true',
+                'desktopAuthPassword': password,
+                'checkVersionPeriod': '-1'
+              }[key] ??
+              '');
+        }
+        if (request['method'] == 'pre_login') {
+          return reply(
+              '{"pre_set":false,"pre_login":false,"self_info":null,"message":""}');
+        }
+        if (request['method'] == 'config_links') return reply('{}');
+        return reply('');
+      });
+      await tester.pumpWidget(const MaterialApp(home: InitScreen()));
+      for (var frame = 0; frame < 50; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+        final destination = password.isEmpty
+            ? find.byType(FirstLoginScreen)
+            : find.byType(VerifyPassword);
+        if (destination.evaluate().isNotEmpty) break;
+      }
+      await tester.pumpAndSettle();
+      expect(find.byType(UnlockBrowserScreen), findsNothing);
+      expect(find.byType(CalculatorScreen), findsNothing);
+      expect(readKeys, isNot(contains('passed')));
+      expect(readKeys, isNot(contains('alwaysEnterBrowser')));
+      if (password.isEmpty) {
+        expect(find.byType(FirstLoginScreen), findsOneWidget);
+      } else {
+        expect(find.byType(VerifyPassword), findsOneWidget,
+            reason: 'Read config keys: $readKeys');
+        expect(find.byType(FirstLoginScreen), findsNothing);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -28,6 +29,17 @@ class DownloadsExportingScreen extends StatefulWidget {
 
 class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
   bool exporting = false;
+  bool _preparing = false;
+  Future<void> _runExport(Future<dynamic> Function() action) =>
+      runUiAction(context, () async {
+        if (_preparing || exporting) return;
+        setState(() => _preparing = true);
+        try {
+          await action();
+        } finally {
+          if (mounted) setState(() => _preparing = false);
+        }
+      });
   bool exported = false;
   bool exportFail = false;
   dynamic e;
@@ -68,7 +80,7 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
       children: [
         // Container(height: 20),
         // MaterialButton(
-        //   onPressed: _exportPkz,
+        //   onPressed: _preparing || exporting ? null : () => _runExport(_exportPkz),
         //   child: const Text("导出PKZ"),
         // ),
         Container(height: 20),
@@ -123,9 +135,11 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
     );
   }
 
-  Widget _buildButtonInner(VoidCallback? onPressed, String text) {
+  Widget _buildButtonInner(Future<dynamic> Function()? onPressed, String text) {
     return MaterialButton(
-      onPressed: onPressed,
+      onPressed: _preparing || exporting || onPressed == null
+          ? null
+          : () => _runExport(onPressed),
       child: LayoutBuilder(
         builder: (BuildContext context, BoxConstraints constraints) {
           return Container(
@@ -144,15 +158,16 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
     );
   }
 
-  _exportJmis() async {
+  Future<void> _exportJmis() async {
     if (Platform.isMacOS) {
-      await chooseEx(context);
+      if (!await chooseEx(context)) return;
     }
     if (!mounted) return;
     if (!await confirmDialog(
         context, "导出确认", "将您所选的漫画分别导出JMI${showExportPath()}")) {
       return;
     }
+    if (!mounted) return;
     try {
       if (mounted) {
         setState(() {
@@ -173,6 +188,7 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
         if (currentExportRename()) {
           rename = await displayTextInputDialog(context,
               title: "导出重命名", src: ab?.album?.name ?? "");
+          if (rename == null || !mounted) return;
         }
         await methods.export_jm_jmi_single(
           value,
@@ -194,15 +210,16 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
     }
   }
 
-  _exportPdf() async {
+  Future<void> _exportPdf() async {
     if (Platform.isMacOS) {
-      await chooseEx(context);
+      if (!await chooseEx(context)) return;
     }
     if (!mounted) return;
     if (!await confirmDialog(
         context, "导出确认", "将您所选的漫画分别导出PDF${showExportPath()}")) {
       return;
     }
+    if (!mounted) return;
     try {
       if (mounted) {
         setState(() {
@@ -237,15 +254,16 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
     }
   }
 
-  _exportCbzsZips() async {
+  Future<void> _exportCbzsZips() async {
     if (Platform.isMacOS) {
-      await chooseEx(context);
+      if (!await chooseEx(context)) return;
     }
     if (!mounted) return;
     if (!await confirmDialog(
         context, "导出确认", "将您所选的漫画分别导出cbzs.zip${showExportPath()}")) {
       return;
     }
+    if (!mounted) return;
     try {
       if (mounted) {
         setState(() {
@@ -266,6 +284,7 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
         if (currentExportRename()) {
           rename = await displayTextInputDialog(context,
               title: "导出重命名", src: ab?.album?.name ?? "");
+          if (rename == null || !mounted) return;
         }
         await methods.export_cbzs_zip_single(
           value,
@@ -287,15 +306,16 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
     }
   }
 
-  _exportZips() async {
+  Future<void> _exportZips() async {
     if (Platform.isMacOS) {
-      await chooseEx(context);
+      if (!await chooseEx(context)) return;
     }
     if (!mounted) return;
     if (!await confirmDialog(
         context, "导出确认", "将您所选的漫画分别导出ZIP${showExportPath()}")) {
       return;
     }
+    if (!mounted) return;
     try {
       if (mounted) {
         setState(() {
@@ -316,6 +336,7 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
         if (currentExportRename()) {
           rename = await displayTextInputDialog(context,
               title: "导出重命名", src: ab?.album?.name ?? "");
+          if (rename == null || !mounted) return;
         }
         await methods.export_jm_zip_single(
           value,
@@ -337,15 +358,16 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
     }
   }
 
-  _exportJpegZips() async {
+  Future<void> _exportJpegZips() async {
     if (Platform.isMacOS) {
-      await chooseEx(context);
+      if (!await chooseEx(context)) return;
     }
     if (!mounted) return;
     if (!await confirmDialog(
         context, "导出确认", "将您所选的漫画分别导出JPEGS.ZIP${showExportPath()}")) {
       return;
     }
+    if (!mounted) return;
     try {
       if (mounted) {
         setState(() {
@@ -366,6 +388,7 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
         if (currentExportRename()) {
           rename = await displayTextInputDialog(context,
               title: "导出重命名", src: ab?.album?.name ?? "");
+          if (rename == null || !mounted) return;
         }
         await methods.export_jm_jpegs_zip_single(
           value,
@@ -387,15 +410,16 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
     }
   }
 
-  _exportEpubs() async {
+  Future<void> _exportEpubs() async {
     if (Platform.isMacOS) {
-      await chooseEx(context);
+      if (!await chooseEx(context)) return;
     }
     if (!mounted) return;
     if (!await confirmDialog(
         context, "导出确认", "将您所选的漫画分别导出EPUB${showExportPath()}")) {
       return;
     }
+    if (!mounted) return;
     try {
       if (mounted) {
         setState(() {
@@ -416,6 +440,7 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
         if (currentExportRename()) {
           rename = await displayTextInputDialog(context,
               title: "导出重命名", src: ab?.album?.name ?? "");
+          if (rename == null || !mounted) return;
         }
         await methods.export_jm_epub_single(
           value,
@@ -442,7 +467,7 @@ class _DownloadsExportingScreenState extends State<DownloadsExportingScreen> {
     return rightClickPop(
       child: buildScreen(context),
       context: context,
-      canPop: !exporting,
+      canPop: !exporting && !_preparing,
     );
   }
 

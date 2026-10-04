@@ -10,8 +10,8 @@ Widget rightClickPop({
     currentUsingRightClickPop()
         ? GestureDetector(
             onSecondaryTap: () {
-              if (canPop) {
-                Navigator.of(context).pop();
+              if (canPop && context.mounted) {
+                Navigator.of(context).maybePop();
               }
             },
             child: child,

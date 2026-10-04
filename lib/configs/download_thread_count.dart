@@ -1,3 +1,5 @@
+import 'package:jasmine/basic/ui_action.dart';
+
 /// 多线程下载并发数
 
 import 'package:flutter/material.dart';
@@ -14,15 +16,15 @@ Future initDownloadThreadCount() async {
 }
 
 Widget downloadThreadCountSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("下载线程数"),
         subtitle: Text("$_downloadThreadCount"),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await chooseDownloadThread(context);
           if (context.mounted) setState(() {});
-        },
+        }),
       );
     },
   );

@@ -1,6 +1,5 @@
 import 'package:event/event.dart';
 import 'package:flutter/material.dart';
-import 'package:jasmine/basic/entities.dart';
 import 'package:jasmine/basic/methods.dart';
 
 import '../../basic/commons.dart';
@@ -9,6 +8,28 @@ import 'floating_search_bar.dart';
 final _event = Event();
 final List<Block> _blockStore = [];
 final List<SearchHistory> _histories = [];
+int _historyRevision = 0;
+bool _deletingHistory = false;
+Future<List<SearchHistory>>? _historyRequest;
+
+Future<void> showComicSearch(
+    BuildContext context, FloatingSearchBarController controller,
+    {required String keywords}) async {
+  // History is optional: opening search must not wait for a native request.
+  controller.display(modifyInput: keywords);
+  final revision = _historyRevision;
+  final request = _historyRequest ??= methods.lastSearchHistories(20);
+  try {
+    final values = await request;
+    if (context.mounted && revision == _historyRevision) {
+      searchHistories = values;
+    }
+  } catch (_) {
+    if (context.mounted) defaultToast(context, '搜索历史加载失败，仍可搜索');
+  } finally {
+    if (identical(_historyRequest, request)) _historyRequest = null;
+  }
+}
 
 set blockStore(List<Block> values) {
   _blockStore.clear();
@@ -17,6 +38,7 @@ set blockStore(List<Block> values) {
 }
 
 set searchHistories(List<SearchHistory> values) {
+  _historyRevision++;
   _histories.clear();
   _histories.addAll(values);
   _event.broadcast();
@@ -56,7 +78,33 @@ class _ComicFloatingSearchBarScreenState
   }
 
   void _setState(_) {
-    setState(() {});
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _deleteHistory([SearchHistory? entry]) async {
+    if (_deletingHistory) return;
+    _deletingHistory = true;
+    _event.broadcast();
+    try {
+      final choice = await chooseListDialog(context,
+          values: ['是', '否'],
+          title: entry == null ? '清除所有历史记录?' : '清除历史记录"${entry.searchQuery}"?');
+      if (!mounted || choice != '是') return;
+      if (entry == null) {
+        await methods.clearAllSearchLog();
+        searchHistories = [];
+      } else {
+        await methods.clearASearchLog(entry.searchQuery);
+        searchHistories = _histories
+            .where((value) => value.searchQuery != entry.searchQuery)
+            .toList();
+      }
+    } catch (_) {
+      if (mounted) defaultToast(context, '删除搜索历史失败，请重试');
+    } finally {
+      _deletingHistory = false;
+      _event.broadcast();
+    }
   }
 
   @override
@@ -92,36 +140,14 @@ class _ComicFloatingSearchBarScreenState
       return [];
     }
     final List<Widget> widgets = [];
-    widgets.add(_buildTitle("历史记录", clear: () async {
-      String? choose = await chooseListDialog(
-        context,
-        values: ["是", "否"],
-        title: "清除所有历史记录?",
-      );
-      if ("是" == choose) {
-        await methods.clearAllSearchLog();
-        _histories.clear();
-        _setState(null);
-      }
-    }));
+    widgets.add(_buildTitle("历史记录", clear: () => _deleteHistory()));
     widgets.add(Wrap(
       children: _histories.map((e) {
         return InkWell(
           onTap: () {
             _onSubmitted(e.searchQuery);
           },
-          onLongPress: () async {
-            String? choose = await chooseListDialog(
-              context,
-              values: ["是", "否"],
-              title: "清除历史记录\"${e.searchQuery}\"?",
-            );
-            if ("是" == choose) {
-              await methods.clearASearchLog(e.searchQuery);
-              _histories.remove(e);
-              _setState(null);
-            }
-          },
+          onLongPress: () => _deleteHistory(e),
           child: Container(
             padding: const EdgeInsets.only(
               left: 10,
@@ -224,7 +250,7 @@ class _ComicFloatingSearchBarScreenState
             ),
             Expanded(child: Container()),
             IconButton(
-              onPressed: clear,
+              onPressed: _deletingHistory ? null : clear,
               icon: const Icon(Icons.close, size: 14, color: Colors.grey),
             ),
           ],

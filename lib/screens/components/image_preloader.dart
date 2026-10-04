@@ -14,15 +14,19 @@ class ImagePreloader {
   final Queue<int> _pending = Queue<int>();
   bool _disposed = false;
   final Set<int> _wanted = {};
+  final Set<int> _completed = {};
 
   void schedule(Iterable<int> indices) {
     if (_disposed) return;
-    _wanted.clear();
+    _wanted
+      ..clear()
+      ..addAll(indices.take(maxPending + maxConcurrent));
+    _completed.retainAll(_wanted);
     _pending.clear();
-    for (final index in indices.take(maxPending + maxConcurrent)) {
-      _wanted.add(index);
+    for (final index in _wanted) {
       if (_pending.length < maxPending &&
           !_active.contains(index) &&
+          !_completed.contains(index) &&
           !_pending.contains(index)) {
         _pending.addLast(index);
       }
@@ -36,13 +40,13 @@ class ImagePreloader {
       final index = _pending.removeFirst();
       _active.add(index);
       unawaited(NativeCallScheduler.speculative(
-              () => Future.sync(() => _load(index)),
-              isCancelled: () => _disposed || !_wanted.contains(index))
-          .then<void>(
-        (_) {},
+          () => Future.sync(() => _load(index)),
+          isCancelled: () => _disposed || !_wanted.contains(index)).then<void>(
+        (_) {
+          if (!_disposed && _wanted.contains(index)) _completed.add(index);
+        },
         onError: (Object _, StackTrace __) {},
-      )
-          .whenComplete(() {
+      ).whenComplete(() {
         _active.remove(index);
         _drain();
       }));
@@ -52,6 +56,7 @@ class ImagePreloader {
   void dispose() {
     _disposed = true;
     _wanted.clear();
+    _completed.clear();
     _pending.clear();
   }
 }

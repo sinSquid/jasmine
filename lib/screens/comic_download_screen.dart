@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:jasmine/basic/methods.dart';
+import '../basic/commons.dart';
 import 'package:jasmine/screens/components/item_builder.dart';
 
 import 'components/comic_info_card.dart';
@@ -16,12 +17,17 @@ class ComicDownloadScreen extends StatefulWidget {
 
 class _ComicDownloadScreenState extends State<ComicDownloadScreen> {
   late Future _innerDownloadFuture;
-  final List<int> _taskedEps = []; // 已经下载的EP
-  final List<int> _selectedEps = []; // 选中的EP
+  final Set<int> _taskedEps = {}; // 已经下载的EP
+  final Set<int> _selectedEps = {}; // 选中的EP
+  bool _submitting = false;
 
   Future _init() async {
     var task = await methods.downloadById(widget.album.id);
-    task?.chapters.map((e) => e.id)?.forEach(_taskedEps.add);
+    if (!mounted) return;
+    _taskedEps
+      ..clear()
+      ..addAll(task?.chapters.map((e) => e.id) ?? <int>[]);
+    _selectedEps.removeAll(_taskedEps);
   }
 
   @override
@@ -45,7 +51,11 @@ class _ComicDownloadScreenState extends State<ComicDownloadScreen> {
           ComicInfoCard(albumToSimple(widget.album, null), link: true),
           ItemBuilder(
             future: _innerDownloadFuture,
-            onRefresh: () async {},
+            onRefresh: () async {
+              setState(() {
+                _innerDownloadFuture = _init();
+              });
+            },
             successBuilder: (
               BuildContext context,
               AsyncSnapshot snapshot,
@@ -112,34 +122,44 @@ class _ComicDownloadScreenState extends State<ComicDownloadScreen> {
           MaterialButton(
             color: theme.colorScheme.secondary,
             textColor: Colors.white,
-            onPressed: () async {
-              List<DownloadCreateChapter> chapters = [];
-              for (var element in series) {
-                if (_selectedEps.contains(element.id)) {
-                  chapters.add(DownloadCreateChapter(
-                    id: element.id,
-                    name: element.name,
-                    sort: element.sort,
-                  ));
-                }
-              }
-              if (chapters.isEmpty) {
-                return;
-              }
-              var carte = DownloadCreate(
-                album: DownloadCreateAlbum(
-                  id: albumResponse.id,
-                  name: albumResponse.name,
-                  author: albumResponse.author,
-                  tags: albumResponse.tags,
-                  works: albumResponse.works,
-                  description: albumResponse.description,
-                ),
-                chapters: chapters,
-              );
-              await methods.createDownload(carte);
-              Navigator.pop(context);
-            },
+            onPressed: _submitting
+                ? null
+                : () async {
+                    if (_submitting) return;
+                    List<DownloadCreateChapter> chapters = [];
+                    for (var element in series) {
+                      if (_selectedEps.contains(element.id)) {
+                        chapters.add(DownloadCreateChapter(
+                          id: element.id,
+                          name: element.name,
+                          sort: element.sort,
+                        ));
+                      }
+                    }
+                    if (chapters.isEmpty) {
+                      return;
+                    }
+                    var carte = DownloadCreate(
+                      album: DownloadCreateAlbum(
+                        id: albumResponse.id,
+                        name: albumResponse.name,
+                        author: albumResponse.author,
+                        tags: albumResponse.tags,
+                        works: albumResponse.works,
+                        description: albumResponse.description,
+                      ),
+                      chapters: chapters,
+                    );
+                    setState(() => _submitting = true);
+                    try {
+                      await methods.createDownload(carte);
+                      if (mounted) Navigator.pop(context);
+                    } catch (_) {
+                      if (mounted) defaultToast(context, "创建下载失败，请重试");
+                    } finally {
+                      if (mounted) setState(() => _submitting = false);
+                    }
+                  },
             child: const Text('确定下载'),
           ),
         ],
@@ -221,7 +241,7 @@ class _ComicDownloadScreenState extends State<ComicDownloadScreen> {
       return Colors.black;
     }
     if (_selectedEps.contains(id)) {
-      return  Theme.of(context).colorScheme.brightness == Brightness.light
+      return Theme.of(context).colorScheme.brightness == Brightness.light
           ? Colors.black
           : Colors.black;
     }

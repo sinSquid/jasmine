@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -21,7 +22,6 @@ import '../basic/commons.dart';
 import '../basic/web_dav_sync.dart';
 import '../configs/Authentication.dart';
 import '../configs/android_display_mode.dart';
-import '../configs/always_enter_browser.dart';
 import '../configs/categories_sort.dart';
 import '../configs/comic_seal.dart';
 import '../configs/display_jmcode.dart';
@@ -44,7 +44,6 @@ import '../configs/web_dav_password.dart';
 import '../configs/web_dav_sync_switch.dart';
 import '../configs/web_dav_url.dart';
 import '../configs/web_dav_username.dart';
-import '../configs/passed.dart' as passed_config;
 import 'components/right_click_pop.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -178,42 +177,21 @@ class _SettingsState extends State<SettingsScreen> {
     }
   }
 
-  Future<void> _resetBrowser(BuildContext context) async {
-    if (!await confirmDialog(context, "重置浏览器", "确定删除浏览器启动标记吗? 下次启动将重新进入浏览器。")) {
-      return;
-    }
-    try {
-      await passed_config.clearPassed();
-      defaultToast(context, "重置浏览器成功");
-    } catch (e) {
-      defaultToast(context, "重置浏览器失败 : $e");
-    }
-  }
-
   Widget _startupImageSettingTile(BuildContext context) {
     return ListTile(
-      onTap: () async {
+      onTap: () => runUiAction(context, () async {
         await _pickAndSaveStartupImage(context);
-      },
+      }),
       title: Text(_startupImageExists ? "替换启动图" : "设置启动图"),
     );
   }
 
   Widget _deleteStartupImageTile(BuildContext context) {
     return ListTile(
-      onTap: () async {
+      onTap: () => runUiAction(context, () async {
         await _deleteStartupImage(context);
-      },
+      }),
       title: const Text("删除启动图"),
-    );
-  }
-
-  Widget _resetBrowserTile(BuildContext context) {
-    return ListTile(
-      onTap: () async {
-        await _resetBrowser(context);
-      },
-      title: const Text("重置浏览器"),
     );
   }
 
@@ -244,13 +222,13 @@ class _SettingsState extends State<SettingsScreen> {
                 renameFavoriteFolderItemTile(context),
                 const Divider(),
                 ListTile(
-                  onTap: () async {
+                  onTap: () => runUiAction(context, () async {
                     if (await confirmDialog(
                         context, "清除账号信息", "您确定要清除账号信息并退出APP吗?")) {
                       await methods.logout();
                       exit(0);
                     }
-                  },
+                  }),
                   title: const Text("清除账号信息"),
                 ),
                 const Divider(),
@@ -293,10 +271,6 @@ class _SettingsState extends State<SettingsScreen> {
               leading: Icon(Icons.ad_units),
               title: Text('系统和应用程序'),
               children: [
-                alwaysEnterBrowserSetting(),
-                const Divider(),
-                _resetBrowserTile(context),
-                const Divider(),
                 _startupImageSettingTile(context),
                 if (_startupImageExists) _deleteStartupImageTile(context),
                 const Divider(),

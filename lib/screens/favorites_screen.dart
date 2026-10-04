@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 import 'package:jasmine/basic/commons.dart';
 import 'package:jasmine/basic/log.dart';
@@ -25,7 +26,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   _chooseFolder() async {
     int? f = await chooseMapDialog(
       context,
-      values: _folderMap.map((key, value) => MapEntry(value, key)),
+      values: _folderMap.map(
+          (key, value) => MapEntry(key == 0 ? value : '$value (#$key)', key)),
       title: "选择文件夹",
     );
     if (f != null) {
@@ -43,21 +45,15 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
   };
   String _sort = "mr";
 
-  _chooseSort() async {
-    String? f = await chooseMapDialog(
-      context,
-      values: _sortNameMap.map((key, value) => MapEntry(value, key)),
-      title: "选择排序",
-    );
-    if (f != null) {
-      if (mounted) {
-        setState(() {
-          _sort = f;
-        });
-      }
-      await methods.saveProperty("favorites_sort", f);
-    }
-  }
+  Future<void> _chooseSort() => runUiAction(context, () async {
+        if (_isLoading) return;
+        final value = await chooseMapDialog(context,
+            values: _sortNameMap.map((key, value) => MapEntry(value, key)),
+            title: '选择排序');
+        if (value == null || !mounted) return;
+        await methods.saveProperty('favorites_sort', value);
+        if (mounted) setState(() => _sort = value);
+      });
 
   @override
   void initState() {
@@ -111,7 +107,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
         title: const Text("收藏夹"),
         actions: [
           MaterialButton(
-            onPressed: _chooseSort,
+            onPressed: _isLoading ? null : _chooseSort,
             child: Row(
               children: [
                 const Icon(Icons.sort, size: 15),
@@ -137,10 +133,14 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
           : ComicPager(
               key: Key("FAVOUR:$_folderId:$_sort"),
               onPage: (int page) async {
+                final revision = sessionRevision;
                 final folderId = _folderId;
                 final sort = _sort;
                 final response = await methods.favorites(folderId, page, sort);
-                if (mounted && _folderId == folderId && _sort == sort) {
+                if (mounted &&
+                    revision == sessionRevision &&
+                    _folderId == folderId &&
+                    _sort == sort) {
                   setState(() {
                     favData = response.folderList;
                     _folderMap
@@ -150,6 +150,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                           .map((f) => MapEntry(f.fid, f.name)));
                   });
                 }
+                if (revision != sessionRevision)
+                  throw StateError('登录状态已变化，请刷新');
                 return InnerComicPage(
                     total: response.total, list: response.list);
               },

@@ -43,8 +43,8 @@ void main() {
     await tester.pumpWidget(cover(1));
     await tester.pumpAndSettle();
     final image = tester.widget<Image>(find.byType(Image));
-    expect(image.image, isA<ResizeImage>());
-    expect((image.image as ResizeImage).width,
+    expect(image.image, isA<BoundedFileImage>());
+    expect((image.image as BoundedFileImage).targetWidth,
         (100 * tester.view.devicePixelRatio).ceil().clamp(1, 2048));
 
     await tester.pumpWidget(cover(2));

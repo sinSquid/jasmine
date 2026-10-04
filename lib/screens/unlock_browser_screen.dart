@@ -1,14 +1,12 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-import '../basic/web_dav_sync.dart';
-import '../configs/login.dart';
-import '../configs/passed.dart';
-import 'app_screen.dart';
-import 'first_login_screen.dart';
+import '../basic/commons.dart';
+import 'init_screen.dart';
 
 class UnlockBrowserScreen extends StatefulWidget {
   const UnlockBrowserScreen({Key? key}) : super(key: key);
@@ -18,7 +16,6 @@ class UnlockBrowserScreen extends StatefulWidget {
 }
 
 class _UnlockBrowserScreenState extends State<UnlockBrowserScreen> {
-  static const _activationScheme = 'jm://start';
   static const _defaultUrl = 'https://www.bing.com/';
 
   final TextEditingController _addressController =
@@ -41,10 +38,15 @@ class _UnlockBrowserScreenState extends State<UnlockBrowserScreen> {
   }
 
   bool _isActivationUrl(String url) {
-    final normalized = _normalize(url);
-    if (normalized == _activationScheme) return true;
-    if (normalized == '$_activationScheme/') return true;
-    return normalized.startsWith(_activationScheme);
+    final uri = Uri.tryParse(_normalize(url));
+    return uri != null &&
+        uri.scheme == 'jm' &&
+        uri.host == 'start' &&
+        (uri.path.isEmpty || uri.path == '/') &&
+        uri.userInfo.isEmpty &&
+        !uri.hasPort &&
+        !uri.hasQuery &&
+        !uri.hasFragment;
   }
 
   Uri _toUri(String input) {
@@ -56,38 +58,31 @@ class _UnlockBrowserScreenState extends State<UnlockBrowserScreen> {
     return Uri.parse('https://$raw');
   }
 
+  bool _activating = false;
+
   Future<void> _activate() async {
-    await firstPassed();
-    if (!mounted) return;
-
-    if (loginStatus == LoginStatus.notSet) {
-      await webDavSyncAuto(context);
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (BuildContext context) {
-          return firstLoginScreen;
-        }),
-      );
-      return;
+    if (!mounted || _activating) return;
+    _activating = true;
+    try {
+      await activateApp(context);
+    } catch (_) {
+      if (mounted) defaultToast(context, '进入失败，请重试');
+    } finally {
+      _activating = false;
     }
-
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (BuildContext context) {
-        return const AppScreen();
-      }),
-    );
   }
 
-  Future<void> _loadFromAddressBar(String value) async {
-    if (_isActivationUrl(value)) {
-      await _activate();
-      return;
-    }
-    final uri = _toUri(value);
-    await _webViewController?.loadUrl(
-      urlRequest: URLRequest(url: WebUri(uri.toString())),
-    );
-  }
+  Future<void> _loadFromAddressBar(String value) =>
+      runUiAction(context, () async {
+        if (_isActivationUrl(value)) {
+          await _activate();
+          return;
+        }
+        final uri = _toUri(value);
+        await _webViewController?.loadUrl(
+          urlRequest: URLRequest(url: WebUri(uri.toString())),
+        );
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -174,6 +169,7 @@ class _UnlockBrowserScreenState extends State<UnlockBrowserScreen> {
                 return NavigationActionPolicy.ALLOW;
               },
               onLoadStart: (controller, url) {
+                if (!mounted) return;
                 final u = url?.toString() ?? '';
                 setState(() {
                   _currentUrl = u.isEmpty ? _currentUrl : u;
@@ -181,6 +177,7 @@ class _UnlockBrowserScreenState extends State<UnlockBrowserScreen> {
                 });
               },
               onLoadStop: (controller, url) async {
+                if (!mounted) return;
                 final u = url?.toString() ?? '';
                 setState(() {
                   _currentUrl = u.isEmpty ? _currentUrl : u;
@@ -189,6 +186,7 @@ class _UnlockBrowserScreenState extends State<UnlockBrowserScreen> {
                 });
               },
               onProgressChanged: (controller, progress) {
+                if (!mounted) return;
                 setState(() {
                   _progress = progress / 100.0;
                 });

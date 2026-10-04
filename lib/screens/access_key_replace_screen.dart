@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:jasmine/basic/log.dart';
@@ -39,6 +40,7 @@ class _AccessKeyReplaceScreenState extends State<AccessKeyReplaceScreen> {
       _username = await methods.loadLastLoginUsername();
       final checkResult = await methods.checkPat(widget.accessKey);
       final check = jsonDecode(checkResult);
+      if (!mounted) return;
       setState(() {
         _patId = check["email"] ?? "";
         _bindUid = check["bind_user"] ?? "";
@@ -47,10 +49,10 @@ class _AccessKeyReplaceScreenState extends State<AccessKeyReplaceScreen> {
         _reBind = check["re_bind"] ?? 0;
         _loading = false;
       });
-    } catch (e, s) {
-      debugPrient("$e\n$s");
-      defaultToast(context, "验证失败: $e");
-      Navigator.of(context).pop();
+    } catch (_) {
+      debugPrient('PAT 操作失败');
+      defaultToast(context, "验证失败，请重试");
+      if (mounted) Navigator.of(context).pop();
     }
   }
 
@@ -133,31 +135,41 @@ class _AccessKeyReplaceScreenState extends State<AccessKeyReplaceScreen> {
     );
   }
 
-  Future _bind() async {
-    try {
-      defaultToast(context, "绑定中...");
-      await methods.bindPatAccount(widget.accessKey, _username);
-      await methods.reloadPatAccount();
-      await reloadIsPro();
-      defaultToast(context, "绑定成功");
-      Navigator.of(context).pop();
-    } catch (e, s) {
-      debugPrient("$e\n$s");
-      defaultToast(context, "绑定失败: $e");
-    }
-  }
+  Future<void> _bind() => runUiAction(context, () async {
+        try {
+          defaultToast(context, "绑定中...");
+          await methods.bindPatAccount(widget.accessKey, _username);
+          try {
+            await methods.reloadPatAccount();
+            await reloadIsPro();
+          } catch (_) {
+            defaultToast(context, '绑定已完成，状态刷新失败，请稍后刷新');
+            return;
+          }
+          defaultToast(context, "绑定成功");
+          if (mounted) Navigator.of(context).pop();
+        } catch (_) {
+          debugPrient('PAT 操作失败');
+          defaultToast(context, "绑定失败，请重试");
+        }
+      });
 
-  Future _save() async {
-    try {
-      defaultToast(context, "保存中...");
-      await methods.bindPatAccount(widget.accessKey, _username);
-      await methods.reloadPatAccount();
-      await reloadIsPro();
-      defaultToast(context, "保存成功");
-      Navigator.of(context).pop();
-    } catch (e, s) {
-      debugPrient("$e\n$s");
-      defaultToast(context, "保存失败: $e");
-    }
-  }
+  Future<void> _save() => runUiAction(context, () async {
+        try {
+          defaultToast(context, "保存中...");
+          await methods.bindPatAccount(widget.accessKey, _username);
+          try {
+            await methods.reloadPatAccount();
+            await reloadIsPro();
+          } catch (_) {
+            defaultToast(context, '绑定已完成，状态刷新失败，请稍后刷新');
+            return;
+          }
+          defaultToast(context, "保存成功");
+          if (mounted) Navigator.of(context).pop();
+        } catch (_) {
+          debugPrient('PAT 操作失败');
+          defaultToast(context, "保存失败，请重试");
+        }
+      });
 }

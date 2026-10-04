@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:async' show Future;
 
 import 'package:event/event.dart';
@@ -58,6 +59,7 @@ Future initVersion() async {
   // 检查周期
   final vStr = await methods.loadProperty(_propertyName);
   _period = int.tryParse(vStr) ?? 0;
+  if (_period > 8640000000000000 || _period < -1) _period = 0;
   if (_period > 0) {
     if (DateTime.now().millisecondsSinceEpoch > _period) {
       await methods.saveProperty(_propertyName, "0");
@@ -82,12 +84,16 @@ String latestDownloadUrl() {
   return _downloadUrl;
 }
 
-Future autoCheckNewVersion() {
+Future<void> autoCheckNewVersion() async {
   if (_period != 0) {
     // -1 不检查, >0 未到检查时间
     return Future.value();
   }
-  return _versionCheck();
+  try {
+    await _versionCheck();
+  } catch (_) {
+    debugPrint('自动版本检查失败');
+  }
 }
 
 int _compareSemVer(_SemVer local, _SemVer remote) {
@@ -185,15 +191,15 @@ Future _choosePeriod(BuildContext context) async {
 }
 
 Widget autoUpdateCheckSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("自动检查更新"),
         subtitle: Text(_periodText()),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await _choosePeriod(context);
           setState(() {});
-        },
+        }),
       );
     },
   );

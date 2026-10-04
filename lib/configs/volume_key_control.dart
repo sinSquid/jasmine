@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -18,7 +19,7 @@ bool currentVolumeKeyControl() {
 
 Future<void> _chooseVolumeKeyControl(BuildContext context) async {
   String? result = await chooseListDialog<String>(context,
-      title: "鼠标右键返回上一页", values: ["是", "否"]);
+      title: "音量键翻页", values: ["是", "否"]);
   if (result != null) {
     var target = result == "是";
     await methods.saveProperty(_propertyName, "$target");
@@ -30,15 +31,15 @@ Widget volumeKeyControlSetting() {
   if (!(Platform.isAndroid)) {
     return Container();
   }
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("音量键翻页"),
         subtitle: Text(_volumeKeyControl ? "是" : "否"),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await _chooseVolumeKeyControl(context);
           setState(() {});
-        },
+        }),
       );
     },
   );

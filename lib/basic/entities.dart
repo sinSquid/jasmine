@@ -72,6 +72,7 @@ class SearchPage {
   SearchPage({
     required this.searchQuery,
     required this.total,
+    this.redirectAid,
   });
 
   late final String searchQuery;
@@ -210,7 +211,7 @@ class Categories {
     name = json['name'];
     slug = json['slug'];
     totalAlbums = json['total_albums'];
-    type = null;
+    type = json['type'];
   }
 
   Map<String, dynamic> toJson() {
@@ -579,7 +580,7 @@ class Expinfo {
     level = json['level'];
     nextLevelExp = json['nextLevelExp'];
     exp = json['exp'];
-    expPercent = json['expPercent'];
+    expPercent = (json['expPercent'] as num).toDouble();
     uid = json['uid'];
     badges = List.from(json['badges']).map((e) => Badge.fromJson(e)).toList();
   }
@@ -721,7 +722,7 @@ class SelfInfo {
     level = json['level'];
     nextLevelExp = json['nextLevelExp'];
     exp = json['exp'];
-    expPercent = json['expPercent'];
+    expPercent = (json['expPercent'] as num).toDouble();
     badges = List.castFrom<dynamic, dynamic>(json['badges']);
     albumFavoritesMax = json['album_favorites_max'];
   }
@@ -793,7 +794,7 @@ class Favorite extends CountPage<ComicSimple> {
     return _data;
   }
 
-  Favorite(): super() {
+  Favorite() : super() {
     list = [];
     folderList = [];
   }
@@ -839,9 +840,9 @@ class FavoritesResponse extends CountPage<ComicSimple> {
 }
 
 class WeekFilterResponse extends Page<ComicSimple> {
-    WeekFilterResponse.fromJson(Map<String, dynamic> json) {
-      list = List.from(json['list']).map((e) => ComicSimple.fromJson(e)).toList();
-      total = json['total'];
+  WeekFilterResponse.fromJson(Map<String, dynamic> json) {
+    list = List.from(json['list']).map((e) => ComicSimple.fromJson(e)).toList();
+    total = json['total'];
   }
 }
 
@@ -1072,8 +1073,8 @@ class GameCategory {
   late final String? slug;
 
   GameCategory.fromJson(Map<String, dynamic> json) {
-    name = null;
-    slug = null;
+    name = json['name'];
+    slug = json['slug'];
   }
 
   Map<String, dynamic> toJson() {
@@ -1300,14 +1301,13 @@ class DlImage {
 
 ComicBasic albumToSimple(AlbumResponse album, ComicBasic? bk) {
   return ComicBasic(
-    id: album.id,
-    description: album.description,
-    name: album.name,
-    author: album.author.join(" / "),
-    image: album.images.isEmpty ? '' : album.images[0] ?? '',
-    addtime: album.addtime,
-    updateAt: bk?.updateAt
-  );
+      id: album.id,
+      description: album.description,
+      name: album.name,
+      author: album.author.join(" / "),
+      image: album.images.isEmpty ? '' : album.images[0] ?? '',
+      addtime: album.addtime,
+      updateAt: bk?.updateAt);
 }
 
 class IsPro {
@@ -1367,7 +1367,9 @@ class WeekData {
   late List<WeekType> types;
 
   WeekData.fromJson(Map<String, dynamic> json) {
-    categories = List.from(json['categories']).map((e) => WeekCategory.fromJson(e)).toList();
+    categories = List.from(json['categories'])
+        .map((e) => WeekCategory.fromJson(e))
+        .toList();
     types = List.from(json['type']).map((e) => WeekType.fromJson(e)).toList();
   }
 }

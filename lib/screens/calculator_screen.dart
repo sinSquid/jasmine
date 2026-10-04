@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import '../basic/web_dav_sync.dart';
-import '../configs/login.dart';
-import '../configs/passed.dart';
-
-import 'app_screen.dart';
-import 'first_login_screen.dart';
+import '../basic/commons.dart';
+import 'init_screen.dart';
 
 class CalculatorScreen extends StatelessWidget {
   const CalculatorScreen({Key? key}) : super(key: key);
@@ -30,13 +26,12 @@ class ContentBodyState extends State<ContentBody> {
   String sums = '0';
   String total = '0';
   String flag = '';
-  bool isDouble = false;
   int tag = 0;
   List list = [
-    {'bgc': '0xFFFF9800', 'color': '0xFFFFFFFFF'},
-    {'bgc': '0xFFFF9800', 'color': '0xFFFFFFFFF'},
-    {'bgc': '0xFFFF9800', 'color': '0xFFFFFFFFF'},
-    {'bgc': '0xFFFF9800', 'color': '0xFFFFFFFFF'},
+    {'bgc': '0xFFFF9800', 'color': '0xFFFFFFFF'},
+    {'bgc': '0xFFFF9800', 'color': '0xFFFFFFFF'},
+    {'bgc': '0xFFFF9800', 'color': '0xFFFFFFFF'},
+    {'bgc': '0xFFFF9800', 'color': '0xFFFFFFFF'},
   ];
 
   @override
@@ -65,16 +60,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(32),
+                        padding: EdgeInsets.all(32),
                         color: Colors.grey,
                         splashColor: Colors.white,
                         onPressed: () {
                           btnclick('重置');
                         },
                         child: const Text('AC',
-                            style: TextStyle(
-                                color: Colors.black, fontSize: 20)),
+                            style:
+                                TextStyle(color: Colors.black, fontSize: 20)),
                         shape: const CircleBorder(
                           side: BorderSide(color: Colors.grey),
                         ),
@@ -86,16 +80,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(32),
+                        padding: EdgeInsets.all(32),
                         color: Colors.grey,
                         splashColor: Colors.white,
                         onPressed: () {
                           btnclick('加/减');
                         },
                         child: const Text('+/-',
-                            style: TextStyle(
-                                color: Colors.black, fontSize: 20)),
+                            style:
+                                TextStyle(color: Colors.black, fontSize: 20)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Colors.grey)),
                       ),
@@ -106,16 +99,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(32),
+                        padding: EdgeInsets.all(32),
                         color: Colors.grey,
                         splashColor: Colors.white,
                         onPressed: () {
                           btnclick('百分号');
                         },
                         child: const Text('%',
-                            style: TextStyle(
-                                color: Colors.black, fontSize: 25)),
+                            style:
+                                TextStyle(color: Colors.black, fontSize: 25)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Colors.grey)),
                       ),
@@ -126,8 +118,7 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(24),
+                        padding: EdgeInsets.all(24),
                         color: Color(int.parse(list[0]['bgc'])),
                         splashColor: Color(int.parse(list[0]['bgc'])),
                         onPressed: () {
@@ -135,13 +126,11 @@ class ContentBodyState extends State<ContentBody> {
                         },
                         child: Text('÷',
                             style: TextStyle(
-                                color:
-                                Color(int.parse(list[0]['color'])),
+                                color: Color(int.parse(list[0]['color'])),
                                 fontSize: 30)),
                         shape: CircleBorder(
                             side: BorderSide(
-                                color:
-                                Color(int.parse(list[0]['bgc'])))),
+                                color: Color(int.parse(list[0]['bgc'])))),
                       ),
                       alignment: Alignment.center,
                     ),
@@ -157,16 +146,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(29),
+                        padding: EdgeInsets.all(29),
                         color: const Color(0xFF3B3B3B),
                         splashColor: Colors.grey,
                         onPressed: () {
                           numClick('7');
                         },
                         child: const Text('7',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 30)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 30)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Color(0xFF3B3B3B))),
                       ),
@@ -177,16 +165,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(29),
+                        padding: EdgeInsets.all(29),
                         color: const Color(0xFF3B3B3B),
                         splashColor: Colors.grey,
                         onPressed: () {
                           numClick('8');
                         },
                         child: const Text('8',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 30)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 30)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Color(0xFF3B3B3B))),
                       ),
@@ -197,16 +184,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(29),
+                        padding: EdgeInsets.all(29),
                         color: const Color(0xFF3B3B3B),
                         splashColor: Colors.grey,
                         onPressed: () {
                           numClick('9');
                         },
                         child: const Text('9',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 30)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 30)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Color(0xFF3B3B3B))),
                       ),
@@ -217,8 +203,7 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(24),
+                        padding: EdgeInsets.all(24),
                         color: Color(int.parse(list[1]['bgc'])),
                         splashColor: Color(int.parse(list[1]['bgc'])),
                         onPressed: () {
@@ -226,13 +211,11 @@ class ContentBodyState extends State<ContentBody> {
                         },
                         child: Text('×',
                             style: TextStyle(
-                                color:
-                                Color(int.parse(list[1]['color'])),
+                                color: Color(int.parse(list[1]['color'])),
                                 fontSize: 30)),
                         shape: CircleBorder(
                             side: BorderSide(
-                                color:
-                                Color(int.parse(list[1]['bgc'])))),
+                                color: Color(int.parse(list[1]['bgc'])))),
                       ),
                       alignment: Alignment.center,
                     ),
@@ -248,16 +231,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(29),
+                        padding: EdgeInsets.all(29),
                         color: const Color(0xFF3B3B3B),
                         splashColor: Colors.grey,
                         onPressed: () {
                           numClick('4');
                         },
                         child: const Text('4',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 30)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 30)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Color(0xFF3B3B3B))),
                       ),
@@ -268,16 +250,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(29),
+                        padding: EdgeInsets.all(29),
                         color: const Color(0xFF3B3B3B),
                         splashColor: Colors.grey,
                         onPressed: () {
                           numClick('5');
                         },
                         child: const Text('5',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 30)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 30)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Color(0xFF3B3B3B))),
                       ),
@@ -288,16 +269,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(30),
+                        padding: EdgeInsets.all(30),
                         color: const Color(0xFF3B3B3B),
                         splashColor: Colors.grey,
                         onPressed: () {
                           numClick('6');
                         },
                         child: const Text('6',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 30)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 30)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Color(0xFF3B3B3B))),
                       ),
@@ -308,8 +288,7 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(24),
+                        padding: EdgeInsets.all(24),
                         color: Color(int.parse(list[2]['bgc'])),
                         splashColor: Color(int.parse(list[2]['bgc'])),
                         onPressed: () {
@@ -317,13 +296,11 @@ class ContentBodyState extends State<ContentBody> {
                         },
                         child: Text('—',
                             style: TextStyle(
-                                color:
-                                Color(int.parse(list[2]['color'])),
+                                color: Color(int.parse(list[2]['color'])),
                                 fontSize: 30)),
                         shape: CircleBorder(
                             side: BorderSide(
-                                color:
-                                Color(int.parse(list[2]['bgc'])))),
+                                color: Color(int.parse(list[2]['bgc'])))),
                       ),
                       alignment: Alignment.center,
                     ),
@@ -339,16 +316,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(29),
+                        padding: EdgeInsets.all(29),
                         color: const Color(0xFF3B3B3B),
                         splashColor: Colors.grey,
                         onPressed: () {
                           numClick('1');
                         },
                         child: const Text('1',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 30)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 30)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Color(0xFF3B3B3B))),
                       ),
@@ -359,16 +335,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(29),
+                        padding: EdgeInsets.all(29),
                         color: const Color(0xFF3B3B3B),
                         splashColor: Colors.grey,
                         onPressed: () {
                           numClick('2');
                         },
                         child: const Text('2',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 30)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 30)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Color(0xFF3B3B3B))),
                       ),
@@ -379,16 +354,15 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(29),
+                        padding: EdgeInsets.all(29),
                         color: const Color(0xFF3B3B3B),
                         splashColor: Colors.grey,
                         onPressed: () {
                           numClick('3');
                         },
                         child: const Text('3',
-                            style: TextStyle(
-                                color: Colors.white, fontSize: 30)),
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 30)),
                         shape: const CircleBorder(
                             side: BorderSide(color: Color(0xFF3B3B3B))),
                       ),
@@ -399,8 +373,7 @@ class ContentBodyState extends State<ContentBody> {
                   Expanded(
                     child: Container(
                       child: MaterialButton(
-                        padding:
-                        EdgeInsets.all(24),
+                        padding: EdgeInsets.all(24),
                         color: Color(int.parse(list[3]['bgc'])),
                         splashColor: Color(int.parse(list[3]['bgc'])),
                         onPressed: () {
@@ -408,13 +381,11 @@ class ContentBodyState extends State<ContentBody> {
                         },
                         child: Text('+',
                             style: TextStyle(
-                                color:
-                                Color(int.parse(list[3]['color'])),
+                                color: Color(int.parse(list[3]['color'])),
                                 fontSize: 30)),
                         shape: CircleBorder(
                             side: BorderSide(
-                                color:
-                                Color(int.parse(list[3]['bgc'])))),
+                                color: Color(int.parse(list[3]['bgc'])))),
                       ),
                       alignment: Alignment.center,
                     ),
@@ -430,18 +401,14 @@ class ContentBodyState extends State<ContentBody> {
                   Container(
                     child: MaterialButton(
                       padding: const EdgeInsets.only(
-                          left: 70.0,
-                          top: 20.0,
-                          bottom: 20.0,
-                          right: 76.0),
+                          left: 70.0, top: 20.0, bottom: 20.0, right: 76.0),
                       color: const Color(0xFF3B3B3B),
                       splashColor: Colors.grey,
                       onPressed: () {
                         numClick('0');
                       },
                       child: const Text('0',
-                          style: TextStyle(
-                              color: Colors.white, fontSize: 30)),
+                          style: TextStyle(color: Colors.white, fontSize: 30)),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(40)),
                     ),
@@ -450,16 +417,14 @@ class ContentBodyState extends State<ContentBody> {
                   ),
                   Container(
                     child: MaterialButton(
-                      padding:
-                      EdgeInsets.all(29),
+                      padding: EdgeInsets.all(29),
                       color: const Color(0xFF3B3B3B),
                       splashColor: Colors.grey,
                       onPressed: () {
                         numClick('.');
                       },
                       child: const Text('.',
-                          style: TextStyle(
-                              color: Colors.white, fontSize: 30)),
+                          style: TextStyle(color: Colors.white, fontSize: 30)),
                       shape: const CircleBorder(
                           side: BorderSide(color: Color(0xFF3B3B3B))),
                     ),
@@ -467,16 +432,14 @@ class ContentBodyState extends State<ContentBody> {
                   ),
                   Container(
                     child: MaterialButton(
-                      padding:
-                      EdgeInsets.all(24),
+                      padding: EdgeInsets.all(24),
                       color: Colors.orange,
                       splashColor: Colors.orange,
                       onPressed: () {
                         btnclick('等于');
                       },
                       child: const Text('=',
-                          style: TextStyle(
-                              color: Colors.white, fontSize: 30)),
+                          style: TextStyle(color: Colors.white, fontSize: 30)),
                       shape: const CircleBorder(
                           side: BorderSide(color: Colors.orange)),
                     ),
@@ -492,216 +455,103 @@ class ContentBodyState extends State<ContentBody> {
     );
   }
 
-  numClick(e) {
-    if (sums == '0') {
-      if (e == '.') {
-        setState(() {
-          isDouble = true;
-          sums += e;
-        });
-      } else {
-        setState(() {
-          sums = e;
-        });
+  bool _activating = false;
+
+  void numClick(String digit) {
+    setState(() {
+      if (tag == 1 || sums == '错误') {
+        sums = '0';
+        tag = 0;
       }
+      if (digit == '.') {
+        if (!sums.contains('.') && !sums.contains('e')) sums += '.';
+      } else if (sums == '0') {
+        sums = digit;
+      } else if (sums.length < 20) {
+        sums += digit;
+      }
+    });
+  }
+
+  Future<void> _activate() async {
+    if (_activating) return;
+    _activating = true;
+    try {
+      await activateApp(context);
+    } catch (_) {
+      if (mounted) defaultToast(context, '进入失败，请重试');
+    } finally {
+      _activating = false;
+    }
+  }
+
+  String _format(num value) {
+    if (!value.isFinite) return '错误';
+    final text = value.toString();
+    return text.endsWith('.0') ? text.substring(0, text.length - 2) : text;
+  }
+
+  void _calculate() {
+    if (flag.isEmpty) return;
+    final left = num.tryParse(total), right = num.tryParse(sums);
+    if (left == null || right == null) {
+      sums = '错误';
     } else {
-      if (flag != '') {
-        if (tag == 0) {
-          if (sums.length < 20) {
-            setState(() {
-              sums += e;
-            });
-          }
-        } else {
-          setState(() {
-            sums = e;
-            tag = 0;
-          });
-        }
-      } else {
-        if (sums.length < 20) {
-          setState(() {
-            sums += e;
-          });
-        }
+      switch (flag) {
+        case '加':
+          sums = _format(left + right);
+          break;
+        case '减':
+          sums = _format(left - right);
+          break;
+        case '乘':
+          sums = _format(left * right);
+          break;
+        case '除':
+          sums = right == 0 ? '错误' : _format(left / right);
+          break;
       }
     }
+    flag = '';
   }
 
-//  计算点击
-  btnclick(e) {
-    if (sums == "55566686648") {
-      firstPassed().then((value) {
-        if (loginStatus == LoginStatus.notSet) {
-          Future.delayed(Duration.zero, () async {
-            await webDavSyncAuto(context);
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (BuildContext context) {
-                return firstLoginScreen;
-              }),
-            );
-          });
-        } else {
-          Navigator.pushReplacement(context, MaterialPageRoute(
-            builder: (BuildContext context) {
-              return const AppScreen();
-            },
-          ));
-        }
-      });
+  void btnclick(String action) {
+    if (sums == '55566686648') {
+      _activate();
+      return;
     }
-    for (var element in list) {
-      element['color'] = '0xFFFFFFFFF';
-      element['bgc'] = '0xFFFF9800';
-    }
-    switch (e) {
-      case '重置':
-        setState(() {
-          sums = '0';
-          tag = 0;
-          flag = '';
-        });
-        break;
-      case '加':
-        setState(() {
-          total = sums;
-          tag = 1;
-          flag = '加';
-          list[3]['bgc'] = '0xFFFFFFFFF';
-          list[3]['color'] = '0xFFFF9800';
-        });
-        break;
-      case '减':
-        setState(() {
-          total = sums;
-          tag = 1;
-          flag = '减';
-          list[2]['bgc'] = '0xFFFFFFFFF';
-          list[2]['color'] = '0xFFFF9800';
-        });
-        break;
-      case '乘':
-        setState(() {
-          total = sums;
-          tag = 1;
-          flag = '乘';
-          list[1]['bgc'] = '0xFFFFFFFFF';
-          list[1]['color'] = '0xFFFF9800';
-        });
-        break;
-      case '除':
-        setState(() {
-          total = sums;
-          tag = 1;
-          flag = '除';
-          list[0]['bgc'] = '0xFFFFFFFFF';
-          list[0]['color'] = '0xFFFF9800';
-        });
-        break;
-      case '百分号':
-        setState(() {
-          total = sums;
-          tag = 1;
-          flag = '百分号';
-          sums = (int.parse(sums) / 100).toString();
-          isDouble = true;
-        });
-        break;
-      case '等于':
-        sumClac();
-        setState(() {
-          tag = 1;
-          flag = 'true';
-        });
-        clacVlaue();
-    }
-  }
-
-// 计算函数
-  sumClac() {
-    if (flag == '加') {
-      if (isDouble) {
-        double c = double.parse(total) + double.parse(sums);
-        setState(() {
-          sums = c.toString();
-        });
-      } else {
-        int c = int.parse(total) + int.parse(sums);
-        setState(() {
-          sums = c.toString();
-        });
+    setState(() {
+      for (final element in list) {
+        element['color'] = '0xFFFFFFFF';
+        element['bgc'] = '0xFFFF9800';
       }
-      setState(() {
-        total = '';
-        isDouble = false;
+      if (action == '重置') {
+        sums = total = '0';
         flag = '';
-      });
-    } else if (flag == '减') {
-      if (isDouble) {
-        double c = double.parse(total) - double.parse(sums);
-        setState(() {
-          sums = c.toString();
-        });
-      } else {
-        int c = int.parse(total) - int.parse(sums);
-        setState(() {
-          sums = c.toString();
-        });
+        tag = 0;
+        return;
       }
-      setState(() {
-        total = '';
-        flag = '';
-        isDouble = false;
-      });
-    } else if (flag == '乘') {
-      if (isDouble) {
-        double c = double.parse(total) * double.parse(sums);
-        setState(() {
-          sums = c.toString();
-        });
-      } else {
-        int c = int.parse(total) * int.parse(sums);
-        setState(() {
-          sums = c.toString();
-        });
+      if (action == '加/减' || action == '百分号') {
+        final value = num.tryParse(sums);
+        if (value == null) return;
+        sums = _format(action == '加/减' ? -value : value / 100);
+        tag = 0;
+        return;
       }
-      setState(() {
-        total = '';
-        flag = '';
-        isDouble = false;
-      });
-    } else if (flag == '除') {
-      if (isDouble) {
-        double c = double.parse(total) * double.parse(sums);
-        setState(() {
-          sums = c.toString();
-        });
-      } else {
-        double c = int.parse(total) / int.parse(sums);
-        if (int.parse(total) % int.parse(sums) == 0) {
-          setState(() {
-            sums = c.toInt().toString();
-          });
-        } else {
-          setState(() {
-            sums = c.toString();
-          });
-        }
+      if (action == '等于') {
+        _calculate();
+        tag = 1;
+        return;
       }
-      setState(() {
-        total = '';
-        flag = '';
-        isDouble = false;
-      });
-    }
-  }
-
-//  判断计算值
-  clacVlaue() {
-//    if(sums.length >10){
-//      setState(() {
-//        sums = sums.substring(0, 10);
-//      });
-//    }
+      final index = ['除', '乘', '减', '加'].indexOf(action);
+      if (index < 0 || sums == '错误') return;
+      if (flag.isNotEmpty && tag == 0) _calculate();
+      if (sums == '错误') return;
+      total = sums;
+      flag = action;
+      tag = 1;
+      list[index]['bgc'] = '0xFFFFFFFF';
+      list[index]['color'] = '0xFFFF9800';
+    });
   }
 }

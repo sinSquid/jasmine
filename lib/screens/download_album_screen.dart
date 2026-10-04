@@ -24,6 +24,15 @@ class _DownloadAlbumScreenState extends State<DownloadAlbumScreen> {
   late Future<DownloadCreate?> _future;
   late Future<ViewLog?> _viewFuture;
 
+  List<String> _tags(String raw) {
+    try {
+      final value = jsonDecode(raw);
+      return value is List ? value.whereType<String>().toList() : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
   @override
   void initState() {
     _future = methods.downloadById(widget.album.id);
@@ -59,7 +68,7 @@ class _DownloadAlbumScreenState extends State<DownloadAlbumScreen> {
       body: ListView(
         children: [
           ComicDownloadCard(widget.album),
-          _buildTags(List.of(jsonDecode(widget.album.tags)).cast()),
+          _buildTags(_tags(widget.album.tags)),
           ...widget.album.description == ""
               ? []
               : [
@@ -154,7 +163,10 @@ class _DownloadAlbumScreenState extends State<DownloadAlbumScreen> {
       future: _viewFuture,
       builder: (BuildContext context, AsyncSnapshot<ViewLog?> snapshot) {
         if (snapshot.hasError) {
-          return const MyFlatButton(title: "出错了, 点击重试", onPressed: null);
+          return MyFlatButton(
+              title: "出错了, 点击重试",
+              onPressed: () => setState(
+                  () => _viewFuture = methods.findViewLog(widget.album.id)));
         }
         if (snapshot.connectionState != ConnectionState.done) {
           return const MyFlatButton(title: "加载中", onPressed: null);
@@ -215,12 +227,12 @@ class _DownloadAlbumScreenState extends State<DownloadAlbumScreen> {
     return Container(padding: const EdgeInsets.all(10), child: list);
   }
 
-  void _push(
+  Future<void> _push(
     DownloadCreate create,
     int seriesId,
     int initRank,
-  ) {
-    Navigator.push(
+  ) async {
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => ComicReaderScreen(
@@ -242,6 +254,8 @@ class _DownloadAlbumScreenState extends State<DownloadAlbumScreen> {
         ),
       ),
     );
+    if (mounted)
+      setState(() => _viewFuture = methods.findViewLog(widget.album.id));
   }
 
   Future<ChapterResponse> _loadChapter(

@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
@@ -7,7 +8,7 @@ late String _currentWebDavUrl;
 const _propertyName = "WebDavUrl";
 
 Future<String?> initWebDavUrl() async {
-  _currentWebDavUrl  = await methods.loadProperty(_propertyName);
+  _currentWebDavUrl = await methods.loadProperty(_propertyName);
   if (_currentWebDavUrl == "") {
     _currentWebDavUrl = "http://server/.jmtt2mic.history";
   }
@@ -35,15 +36,15 @@ Future<dynamic> inputWebDavUrl(BuildContext context) async {
 }
 
 Widget webDavUrlSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("WebDAV文件URL"),
         subtitle: Text(currentWebDavUrlName()),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await inputWebDavUrl(context);
           setState(() {});
-        },
+        }),
       );
     },
   );

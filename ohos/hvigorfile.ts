@@ -8,7 +8,7 @@ function loadSigningConfigs() {
         fs.accessSync(path);
     } catch (e) {
         if (e.code !== 'ENOENT') {
-            log.error(e);
+            throw e;
         }
         return [];
     }

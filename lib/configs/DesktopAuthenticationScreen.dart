@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 import 'package:jasmine/basic/methods.dart';
 
@@ -27,6 +28,9 @@ class _VerifyPasswordState extends State<VerifyPassword> {
             children: [
               Expanded(child: Container()),
               TextField(
+                obscureText: true,
+                autocorrect: false,
+                enableSuggestions: false,
                 decoration: const InputDecoration(labelText: "当前密码"),
                 onChanged: (value) {
                   _password = value;
@@ -34,15 +38,17 @@ class _VerifyPasswordState extends State<VerifyPassword> {
               ),
               Container(height: 10),
               ElevatedButton(
-                onPressed: () async {
+                onPressed: () => runUiAction(context, () async {
+                  final password = _password;
                   String savedPassword = await methods.loadProperty(_key);
-                  if (_password == savedPassword) {
+                  if (!mounted) return;
+                  if (password == savedPassword) {
                     Navigator.of(context).pop(true);
                   } else {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(const SnackBar(content: Text("密码错误")));
                   }
-                },
+                }),
                 child: const Text("确定"),
               ),
               Expanded(child: Container()),
@@ -83,6 +89,9 @@ class _SetPasswordState extends State<SetPassword> {
                 height: 10,
               ),
               TextField(
+                obscureText: true,
+                autocorrect: false,
+                enableSuggestions: false,
                 decoration: const InputDecoration(labelText: "密码"),
                 onChanged: (value) {
                   _password = value;
@@ -92,6 +101,9 @@ class _SetPasswordState extends State<SetPassword> {
                 height: 10,
               ),
               TextField(
+                obscureText: true,
+                autocorrect: false,
+                enableSuggestions: false,
                 decoration: const InputDecoration(labelText: "再次输入密码"),
                 onChanged: (value) {
                   _password2 = value;
@@ -103,23 +115,23 @@ class _SetPasswordState extends State<SetPassword> {
               Row(
                 children: [
                   ElevatedButton(
-                    onPressed: () async {
+                    onPressed: () => runUiAction(context, () async {
                       Navigator.of(context).pop(false);
-                    },
+                    }),
                     child: const Text("取消"),
                   ),
                   Container(width: 10),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () async {
+                      onPressed: () => runUiAction(context, () async {
                         if (_password != _password2) {
                           ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text("两次输入的密码不一致")));
                           return;
                         }
                         await methods.saveProperty(_key, _password);
-                        Navigator.of(context).pop(true);
-                      },
+                        if (mounted) Navigator.of(context).pop(true);
+                      }),
                       child: const Text("设置密码"),
                     ),
                   ),

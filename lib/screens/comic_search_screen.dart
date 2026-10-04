@@ -42,8 +42,8 @@ class _ComicSearchScreenState extends State<ComicSearchScreen> {
           actions: [
             IconButton(
               onPressed: () async {
-                searchHistories = await methods.lastSearchHistories(20);
-                _controller.display(modifyInput: _keywords);
+                await showComicSearch(context, _controller,
+                    keywords: _keywords);
               },
               icon: const Icon(Icons.search),
             ),

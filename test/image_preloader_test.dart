@@ -57,4 +57,35 @@ void main() {
     preloader.schedule([4]);
     expect(started, [0, 1, 2]);
   });
+  test('repeated viewport updates do not reload completed nearby files',
+      () async {
+    final started = <int>[];
+    final preloader = ImagePreloader((index) async {
+      started.add(index);
+    });
+    for (var frame = 0; frame < 100; frame++) {
+      preloader.schedule([1, 2, 3]);
+      await pumpEventQueue();
+    }
+    expect(started, [1, 2, 3]);
+    preloader.schedule([2, 3, 4]);
+    await pumpEventQueue();
+    expect(started, [1, 2, 3, 4]);
+    preloader.dispose();
+  });
+
+  test('failed preloads remain retryable in the same viewport', () async {
+    var attempts = 0;
+    final preloader = ImagePreloader((index) async {
+      if (++attempts == 1) throw StateError('temporary failure');
+    });
+    preloader.schedule([1]);
+    await pumpEventQueue();
+    preloader.schedule([1]);
+    await pumpEventQueue();
+    preloader.schedule([1]);
+    await pumpEventQueue();
+    expect(attempts, 2);
+    preloader.dispose();
+  });
 }

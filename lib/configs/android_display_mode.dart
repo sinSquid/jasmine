@@ -1,3 +1,5 @@
+import 'package:jasmine/basic/ui_action.dart';
+
 /// 显示模式, 仅安卓有效
 
 import 'dart:io';
@@ -43,15 +45,15 @@ Future<void> _chooseAndroidDisplayMode(BuildContext context) async {
 
 Widget androidDisplayModeSetting() {
   if (Platform.isAndroid && androidVersion >= 23) {
-    return StatefulBuilder(
+    return SettingsBuilder(
       builder: (BuildContext context, void Function(void Function()) setState) {
         return ListTile(
           title: const Text("屏幕刷新率(安卓)"),
           subtitle: Text(_androidDisplayMode),
-          onTap: () async {
+          onTap: () => runUiAction(context, () async {
             await _chooseAndroidDisplayMode(context);
             setState(() {});
-          },
+          }),
         );
       },
     );

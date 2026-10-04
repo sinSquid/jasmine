@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
@@ -32,15 +33,15 @@ Future<dynamic> inputWebDavPassword(BuildContext context) async {
 }
 
 Widget webDavPasswordSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("WebDAV密码"),
         subtitle: Text(currentWebDavPasswordName()),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await inputWebDavPassword(context);
           if (context.mounted) setState(() {});
-        },
+        }),
       );
     },
   );

@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:event/event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -237,13 +238,13 @@ Future chooseTheme(BuildContext context) async {
 final themeEvent = Event();
 
 Widget themeSetting(BuildContext context) {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await chooseTheme(context);
           setState(() => {});
-        },
+        }),
         title: const Text("主题"),
         subtitle: Text(_nameMap[theme] ?? ""),
       );

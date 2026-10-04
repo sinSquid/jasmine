@@ -39,7 +39,8 @@ class _WeekScreenState extends State<WeekScreen> {
             setState(() {});
           },
           successBuilder: (context, data) {
-            return WeekContent(data: data.requireData);
+            return WeekContent(
+                key: ObjectKey(data.requireData), data: data.requireData);
           }),
     );
   }
@@ -64,8 +65,9 @@ class _WeekContentState extends State<WeekContent>
     super.initState();
     _tabController =
         TabController(length: widget.data.types.length, vsync: this);
-    _categoryId = widget.data.categories.first.id;
-    _typeId = widget.data.types.reversed.first.id;
+    _categoryId =
+        widget.data.categories.isEmpty ? '' : widget.data.categories.first.id;
+    _typeId = widget.data.types.isEmpty ? '' : widget.data.types.last.id;
   }
 
   @override
@@ -76,6 +78,9 @@ class _WeekContentState extends State<WeekContent>
 
   @override
   Widget build(BuildContext context) {
+    if (widget.data.categories.isEmpty || widget.data.types.isEmpty) {
+      return const Center(child: Text('暂无每周必看内容'));
+    }
     return Column(
       children: [
         Row(
@@ -148,7 +153,7 @@ class _WeekContentState extends State<WeekContent>
             setState(() {
               _categoryId = category.id;
             });
-            break;
+            return;
           }
           if (category.id == _categoryId) {
             _categoryId = category.id;

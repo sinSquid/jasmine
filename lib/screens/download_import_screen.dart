@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -86,7 +87,7 @@ class _DownloadImportScreenState extends State<DownloadImportScreen> {
   Widget _fileImportButton() {
     return MaterialButton(
       height: 80,
-      onPressed: () async {
+      onPressed: () => runUiAction(context, () async {
         if (!await androidMangeStorageRequest()) {
           if (mounted) defaultToast(context, "申请权限被拒绝");
           return;
@@ -154,7 +155,7 @@ class _DownloadImportScreenState extends State<DownloadImportScreen> {
             defaultToast(context, "只能导入.jm.zip的zip压缩包");
           }
         }
-      },
+      }),
       child: const Text(
         '选择.jm.zip文件进行导入\n选择jmi文件进行导入',
         textAlign: TextAlign.center,
@@ -165,7 +166,7 @@ class _DownloadImportScreenState extends State<DownloadImportScreen> {
   Widget _importDirFilesZipButton() {
     return MaterialButton(
       height: 80,
-      onPressed: () async {
+      onPressed: () => runUiAction(context, () async {
         if (!await androidMangeStorageRequest()) {
           if (mounted) defaultToast(context, "申请权限被拒绝");
           return;
@@ -206,7 +207,7 @@ class _DownloadImportScreenState extends State<DownloadImportScreen> {
             }
           }
         }
-      },
+      }),
       child: const Text(
         '选择文件夹\n(导入里面所有的zip/jmi)',
         textAlign: TextAlign.center,

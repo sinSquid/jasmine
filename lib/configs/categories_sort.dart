@@ -5,51 +5,46 @@ import 'package:flutter/material.dart';
 import 'package:jasmine/screens/components/content_error.dart';
 
 import '../basic/methods.dart';
+import '../basic/commons.dart';
 
 List<int> _categoriesSort = [];
 
-sortCategories(List<Categories> categories) {
-  List<int> ids = [];
-  for (var value in categories) {
-    ids.add(value.id);
-  }
+void sortCategories(List<Categories> categories) {
+  final ranks = {
+    for (var i = 0; i < _categoriesSort.length; i++) _categoriesSort[i]: i
+  };
+  final original = {
+    for (var i = 0; i < categories.length; i++) categories[i]: i
+  };
   categories.sort((a, b) {
-    var aIndex = _categoriesSort.indexOf(a.id);
-    var bIndex = _categoriesSort.indexOf(b.id);
-    if (aIndex == bIndex) {
-      aIndex = ids.indexOf(a.id);
-      bIndex = ids.indexOf(b.id);
-    }
-    if (aIndex == -1) {
-      return 1;
-    } else if (bIndex == -1) {
-      return -1;
-    } else {
-      return aIndex - bIndex;
-    }
+    final compared = (ranks[a.id] ?? _categoriesSort.length)
+        .compareTo(ranks[b.id] ?? _categoriesSort.length);
+    return compared == 0 ? original[a]!.compareTo(original[b]!) : compared;
   });
 }
 
-List<int> getCategoriesSort() {
-  return _categoriesSort;
-}
+List<int> getCategoriesSort() => List.unmodifiable(_categoriesSort);
 
 const _propertyName = "categoriesSort";
 
 Future initCategoriesSort() async {
-  var _sort = await methods.loadProperty(_propertyName);
-  if (_sort == "") {
-    _sort = "[]";
+  final stored = await methods.loadProperty(_propertyName);
+  try {
+    final decoded = jsonDecode(stored.isEmpty ? '[]' : stored);
+    _categoriesSort =
+        decoded is List ? decoded.whereType<int>().toSet().toList() : [];
+  } on FormatException {
+    _categoriesSort = [];
   }
-  _categoriesSort = List<int>.from(jsonDecode(_sort));
 }
 
-get categoriesSort => _categoriesSort;
+List<int> get categoriesSort => getCategoriesSort();
 var categoriesSortEvent = Event();
 
 Future<dynamic> saveCategoriesSort(List<int> categories) async {
-  _categoriesSort = categories;
-  await methods.saveProperty(_propertyName, jsonEncode(categories));
+  final next = categories.toSet().toList();
+  await methods.saveProperty(_propertyName, jsonEncode(next));
+  _categoriesSort = next;
   categoriesSortEvent.broadcast();
 }
 
@@ -134,7 +129,18 @@ class CategoriesSortPanel extends StatefulWidget {
 }
 
 class _CategoriesSortPanelState extends State<CategoriesSortPanel> {
-  final List<int> _categoriesSort = [];
+  late final List<int> _categoriesSort;
+  late final List<Categories> _categories;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final ids = widget.categories.map((e) => e.id).toSet();
+    _categoriesSort = getCategoriesSort().where(ids.contains).toList();
+    _categories = [...widget.categories];
+    sortCategories(_categories);
+  }
 
   _switch(int value) {
     setState(() {
@@ -157,26 +163,6 @@ class _CategoriesSortPanelState extends State<CategoriesSortPanel> {
     blockSize = (min ~/ 3).floorToDouble();
     imageSize = blockSize - 15;
     imageRs = imageSize / 10;
-    var sort = getCategoriesSort();
-    List<int> ids = [];
-    for (var value in widget.categories) {
-      ids.add(value.id);
-    }
-    widget.categories.sort((a, b) {
-      var aIndex = sort.indexOf(a.id);
-      var bIndex = sort.indexOf(b.id);
-      if (aIndex == bIndex) {
-        aIndex = ids.indexOf(a.id);
-        bIndex = ids.indexOf(b.id);
-      }
-      if (aIndex == -1) {
-        return 1;
-      } else if (bIndex == -1) {
-        return -1;
-      } else {
-        return aIndex - bIndex;
-      }
-    });
     List<Widget> wrapItems = _wrapItems(blockSize, imageRs, imageSize);
     //
     return Scaffold(
@@ -272,7 +258,7 @@ class _CategoriesSortPanelState extends State<CategoriesSortPanel> {
       );
     }
 
-    for (var value in widget.categories) {
+    for (var value in _categories) {
       var id = value.id;
       append(
         SizedBox(
@@ -280,7 +266,7 @@ class _CategoriesSortPanelState extends State<CategoriesSortPanel> {
           height: imageSize,
           child: Center(
             child: Text(
-              value.name.substring(0, 1),
+              value.name.isEmpty ? '?' : value.name.characters.first,
               style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -304,10 +290,20 @@ class _CategoriesSortPanelState extends State<CategoriesSortPanel> {
 
   Widget _saveIcon() {
     return IconButton(
-      onPressed: () async {
-        await saveCategoriesSort(_categoriesSort);
-        Navigator.of(context).pop();
-      },
+      onPressed: _saving
+          ? null
+          : () async {
+              if (_saving) return;
+              setState(() => _saving = true);
+              try {
+                await saveCategoriesSort(_categoriesSort);
+                if (mounted) Navigator.of(context).pop();
+              } catch (_) {
+                if (mounted) defaultToast(context, '保存排序失败，请重试');
+              } finally {
+                if (mounted) setState(() => _saving = false);
+              }
+            },
       icon: const Icon(Icons.save),
     );
   }

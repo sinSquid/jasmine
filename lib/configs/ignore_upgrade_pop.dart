@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 
 import '../basic/methods.dart';
@@ -14,17 +15,17 @@ bool currentIgnoreUpgradePop() {
 }
 
 Widget ignoreUpgradePopSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return SwitchListTile(
         title: const Text("是否忽略升级弹窗"),
         subtitle: Text(_ignoreUpgradePop ? "是" : "否"),
         value: _ignoreUpgradePop,
-        onChanged: (value) async {
+        onChanged: (value) => runUiAction(context, () async {
           await methods.saveProperty(_propertyName, "$value");
           _ignoreUpgradePop = value;
           setState(() {});
-        },
+        }),
       );
     },
   );

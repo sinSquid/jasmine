@@ -102,7 +102,6 @@ class _BrowserScreenState extends State<BrowserScreen>
     categoriesSortEvent.subscribe(_resort);
   }
 
-
   @override
   void dispose() {
     categoriesSortEvent.unsubscribe(_resort);
@@ -125,14 +124,15 @@ class _BrowserScreenState extends State<BrowserScreen>
         actions: [
           IconButton(
             onPressed: () async {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => const WeekScreen()));
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => const WeekScreen()));
             },
             icon: const Icon(Icons.calendar_month),
           ),
           IconButton(
             onPressed: () async {
-              searchHistories = await methods.lastSearchHistories(20);
-              widget.searchBarController.display(modifyInput: "");
+              await showComicSearch(context, widget.searchBarController,
+                  keywords: "");
             },
             icon: const Icon(Icons.search),
           ),
@@ -153,7 +153,8 @@ class _BrowserScreenState extends State<BrowserScreen>
           AsyncSnapshot<CategoriesResponse> snapshot,
         ) {
           final categories = snapshot.requireData.categories;
-          if (_slug.isEmpty && categories.isNotEmpty) {
+          if (categories.isEmpty) return const Center(child: Text('暂无分类'));
+          if (!categories.any((category) => category.slug == _slug)) {
             _slug = categories[0].slug;
           }
           return Column(children: [
@@ -167,6 +168,8 @@ class _BrowserScreenState extends State<BrowserScreen>
                     Expanded(
                       child: _MTabBar(
                         categories,
+                        categories
+                            .indexWhere((category) => category.slug == _slug),
                         (index) {
                           setState(() {
                             _slug = categories[index].slug;
@@ -206,16 +209,31 @@ class _MTabBar extends StatefulWidget {
   final List<Categories> categories;
   final void Function(int index) onTab;
 
-  const _MTabBar(this.categories, this.onTab);
+  final int selectedIndex;
+  const _MTabBar(this.categories, this.selectedIndex, this.onTab);
 
   @override
   State<StatefulWidget> createState() => _MTabBarState();
 }
 
-class _MTabBarState extends State<_MTabBar>
-    with SingleTickerProviderStateMixin {
-  late final TabController _tabController =
-      TabController(length: widget.categories.length, vsync: this);
+class _MTabBarState extends State<_MTabBar> with TickerProviderStateMixin {
+  late TabController _tabController = TabController(
+      length: widget.categories.length,
+      initialIndex: widget.selectedIndex,
+      vsync: this);
+  @override
+  void didUpdateWidget(covariant _MTabBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.categories.length != widget.categories.length) {
+      _tabController.dispose();
+      _tabController = TabController(
+          length: widget.categories.length,
+          initialIndex: widget.selectedIndex,
+          vsync: this);
+    } else if (_tabController.index != widget.selectedIndex) {
+      _tabController.index = widget.selectedIndex;
+    }
+  }
 
   @override
   void dispose() {

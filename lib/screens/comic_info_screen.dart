@@ -297,27 +297,25 @@ class _ComicInfoScreenState extends State<ComicInfoScreen> with RouteAware {
   }
 
   Future _changeFavourite(AlbumResponse data) async {
+    if (_favouriteLoading) return;
+    final revision = sessionRevision;
     setState(() {
       _favouriteLoading = true;
     });
     try {
       await methods.setFavorite(data.id);
-      if (!mounted) return;
+      if (!mounted || revision != sessionRevision) return;
       setState(() {
         data.isFavorite = !data.isFavorite;
       });
-      defaultToast(context, "收藏成功");
+      defaultToast(context, data.isFavorite ? "收藏成功" : "已取消收藏");
       if (data.isFavorite && favData.isNotEmpty) {
-        var j = favData.map((i) {
-          return MapEntry(i.name, i.fid);
-        }).toList();
-        j.add(const MapEntry("默认 / 不移动", 0));
         var v = await chooseMapDialog<int>(
           context,
           title: "移动到资料夹",
-          values: Map.fromEntries(j),
+          values: favoriteFolderChoices(defaultLabel: '默认 / 不移动'),
         );
-        if (v != null && v != 0) {
+        if (mounted && revision == sessionRevision && v != null && v != 0) {
           await methods.comicFavoriteFolderMove(data.id, v);
         }
         if (mounted && v != null && v != 0) defaultToast(context, "移动成功");

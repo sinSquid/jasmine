@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
@@ -25,15 +26,15 @@ Future<void> _chooseWebDavSyncSwitch(BuildContext context) async {
 }
 
 Widget webDavSyncSwitchSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("开启时自动同步历史记录到WebDAV"),
         subtitle: Text(_webDavSyncSwitch ? "是" : "否"),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await _chooseWebDavSyncSwitch(context);
           setState(() {});
-        },
+        }),
       );
     },
   );

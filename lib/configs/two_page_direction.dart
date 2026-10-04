@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 import 'package:jasmine/basic/commons.dart';
 import 'package:jasmine/basic/methods.dart';
@@ -51,13 +52,13 @@ Future chooseTwoPageDirection(BuildContext context) async {
 }
 
 Widget twoGalleryDirectionSetting(BuildContext context) {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await chooseTwoPageDirection(context);
           if (context.mounted) setState(() {});
-        },
+        }),
         title: const Text("双页阅读器方向"),
         subtitle: Text(twoPageDirectionName(_twoPageDirection, context)),
       );

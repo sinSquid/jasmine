@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
@@ -25,15 +26,15 @@ Future<void> _chooseNoAnimation(BuildContext context) async {
 }
 
 Widget noAnimationSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("取消键盘或音量翻页动画"),
         subtitle: Text(_noAnimation ? "是" : "否"),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await _chooseNoAnimation(context);
           setState(() {});
-        },
+        }),
       );
     },
   );

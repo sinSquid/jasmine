@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -19,15 +20,15 @@ Widget escToPopSetting() {
   if (!(Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
     return Container();
   }
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return SwitchListTile(
         value: _escToPop,
-        onChanged: (value) async {
+        onChanged: (value) => runUiAction(context, () async {
           await methods.saveProperty(_propertyName, "$value");
           _escToPop = value;
           setState(() {});
-        },
+        }),
         title: const Text("ESC键返回上一页"),
       );
     },

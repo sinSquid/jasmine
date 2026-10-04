@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -11,7 +12,7 @@ const _propertyName = "authentication";
 late bool _authentication;
 
 Future<void> initAuthentication() async {
-  if (Platform.isIOS || androidVersion >= 29) {
+  if (Platform.isIOS || (Platform.isAndroid && androidVersion >= 29)) {
     _authentication = (await methods.loadProperty(_propertyName)) == "true";
   } else if (Platform.isAndroid) {
     _authentication = false;
@@ -27,7 +28,7 @@ bool currentAuthentication() {
 }
 
 Future<bool> verifyAuthentication(BuildContext context) async {
-  if (Platform.isIOS || androidVersion >= 29) {
+  if (Platform.isIOS || (Platform.isAndroid && androidVersion >= 29)) {
     return await methods.verifyAuthentication();
   }
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
@@ -39,31 +40,32 @@ Future<bool> verifyAuthentication(BuildContext context) async {
 }
 
 Widget authenticationSetting() {
-  if (Platform.isIOS || androidVersion >= 29) {
-    return StatefulBuilder(
+  if (Platform.isIOS || (Platform.isAndroid && androidVersion >= 29)) {
+    return SettingsBuilder(
       builder: (BuildContext context, void Function(void Function()) setState) {
         return ListTile(
           title: const Text("进入APP时验证身份(如果系统已经录入密码或指纹)"),
           subtitle: Text(_authentication ? "是" : "否"),
-          onTap: () async {
+          onTap: () => runUiAction(context, () async {
             await _chooseAuthentication(context);
             setState(() {});
-          },
+          }),
         );
       },
     );
   }
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-    return StatefulBuilder(builder: (
+    return SettingsBuilder(builder: (
       BuildContext context,
       void Function(void Function()) setState,
     ) {
       return ListTile(
         title: const Text("设置应用程序密码"),
-        onTap: () async {
-          Navigator.of(context).push(
+        onTap: () => runUiAction(context, () async {
+          await Navigator.of(context).push(
               MaterialPageRoute(builder: (context) => const SetPassword()));
-        },
+          await initAuthentication();
+        }),
       );
     });
   }

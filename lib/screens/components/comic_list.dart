@@ -214,11 +214,11 @@ class _ComicListState extends State<ComicList> {
       itemCount: itemCount,
       itemBuilder: (context, index) => itemAt(index),
     );
-    return NotificationListener(
+    return NotificationListener<ScrollNotification>(
       child: view,
       onNotification: (scrollNotification) {
-        widget.onScroll?.call();
-        return true;
+        if (scrollNotification.depth == 0) widget.onScroll?.call();
+        return false;
       },
     );
   }
@@ -251,11 +251,11 @@ class _ComicListState extends State<ComicList> {
       itemCount: itemCount,
       itemBuilder: (context, index) => itemAt(index),
     );
-    return NotificationListener(
+    return NotificationListener<ScrollNotification>(
       child: view,
       onNotification: (scrollNotification) {
-        widget.onScroll?.call();
-        return true;
+        if (scrollNotification.depth == 0) widget.onScroll?.call();
+        return false;
       },
     );
   }
@@ -349,11 +349,11 @@ class _ComicListState extends State<ComicList> {
       itemCount: itemCount,
       itemBuilder: (context, index) => itemAt(index),
     );
-    return NotificationListener(
+    return NotificationListener<ScrollNotification>(
       child: view,
       onNotification: (scrollNotification) {
-        widget.onScroll?.call();
-        return true;
+        if (scrollNotification.depth == 0) widget.onScroll?.call();
+        return false;
       },
     );
   }
@@ -442,11 +442,11 @@ class _ComicListState extends State<ComicList> {
       itemCount: itemCount,
       itemBuilder: (context, index) => itemAt(index),
     );
-    return NotificationListener(
+    return NotificationListener<ScrollNotification>(
       child: view,
       onNotification: (scrollNotification) {
-        widget.onScroll?.call();
-        return true;
+        if (scrollNotification.depth == 0) widget.onScroll?.call();
+        return false;
       },
     );
   }
@@ -460,6 +460,7 @@ class _ComicListState extends State<ComicList> {
   GestureLongPressCallback? _longPressCallback(int index) {
     if (widget.longPressMenuItems != null &&
         widget.longPressMenuItems!.isNotEmpty) {
+      final comic = widget.data[index];
       return () {
         showMenu(
           context: context,
@@ -471,8 +472,8 @@ class _ComicListState extends State<ComicList> {
                   ))
               .toList(),
         ).then((value) {
-          if (value != null) {
-            value.onChoose.call(widget.data[index]);
+          if (mounted && value != null) {
+            value.onChoose.call(comic);
           }
         });
       };
@@ -483,9 +484,10 @@ class _ComicListState extends State<ComicList> {
   List<LongPressMenuItem>? _longPressImageCallback(int index) {
     if (widget.longPressMenuItems != null &&
         widget.longPressMenuItems!.isNotEmpty) {
+      final comic = widget.data[index];
       return widget.longPressMenuItems!
           .map((e) => LongPressMenuItem(e.title, () {
-                e.onChoose(widget.data[index]);
+                if (mounted) e.onChoose(comic);
               }))
           .toList();
     }

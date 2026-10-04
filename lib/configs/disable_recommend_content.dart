@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:event/event.dart';
 import 'package:flutter/material.dart';
 
@@ -17,18 +18,18 @@ bool currentDisableRecommendContent() {
 }
 
 Widget disableRecommendContentSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return SwitchListTile(
         title: const Text("关闭推荐内容"),
         subtitle: Text(_disableRecommendContent ? "已关闭" : "已开启"),
         value: _disableRecommendContent,
-        onChanged: (value) async {
+        onChanged: (value) => runUiAction(context, () async {
           await methods.saveProperty(_propertyName, "$value");
           _disableRecommendContent = value;
           disableRecommendContentEvent.broadcast();
           setState(() {});
-        },
+        }),
       );
     },
   );

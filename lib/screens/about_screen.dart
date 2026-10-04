@@ -63,7 +63,10 @@ class _AboutState extends State<AboutScreen> {
                   padding: const EdgeInsets.all(10),
                   child: Opacity(
                     opacity: 0.9,
-                    child: Icon(Icons.abc,size: l,),
+                    child: Icon(
+                      Icons.abc,
+                      size: l,
+                    ),
                   ),
                 ),
               ),

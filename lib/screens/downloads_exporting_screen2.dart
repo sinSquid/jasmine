@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -28,6 +29,17 @@ class DownloadsExportingScreen2 extends StatefulWidget {
 
 class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
   bool exporting = false;
+  bool _preparing = false;
+  Future<void> _runExport(Future<dynamic> Function() action) =>
+      runUiAction(context, () async {
+        if (_preparing || exporting) return;
+        setState(() => _preparing = true);
+        try {
+          await action();
+        } finally {
+          if (mounted) setState(() => _preparing = false);
+        }
+      });
   bool exported = false;
   bool exportFail = false;
   dynamic e;
@@ -68,7 +80,7 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
       children: [
         // Container(height: 20),
         // MaterialButton(
-        //   onPressed: _exportPkz,
+        //   onPressed: _preparing || exporting ? null : () => _runExport(_exportPkz),
         //   child: const Text("导出PKZ"),
         // ),
         Container(height: 20),
@@ -87,7 +99,8 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
         ),
         Container(height: 20),
         MaterialButton(
-          onPressed: _exportJpegs,
+          onPressed:
+              _preparing || exporting ? null : () => _runExport(_exportJpegs),
           child: const Text(
             "导出成文件夹",
             textAlign: TextAlign.center,
@@ -95,7 +108,8 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
         ),
         Container(height: 20),
         MaterialButton(
-          onPressed: _exportPdf2,
+          onPressed:
+              _preparing || exporting ? null : () => _runExport(_exportPdf2),
           child: const Text(
             "导出成PDF",
             textAlign: TextAlign.center,
@@ -103,7 +117,8 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
         ),
         Container(height: 20),
         MaterialButton(
-          onPressed: _exportEpub,
+          onPressed:
+              _preparing || exporting ? null : () => _runExport(_exportEpub),
           child: const Text(
             "导出成EPUB",
             textAlign: TextAlign.center,
@@ -114,7 +129,7 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
     );
   }
 
-  _exportJpegs() async {
+  Future<void> _exportJpegs() async {
     late String? path;
     try {
       path = Platform.isIOS
@@ -152,7 +167,7 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
     }
   }
 
-  _exportPdf2() async {
+  Future<void> _exportPdf2() async {
     late String? path;
     try {
       path = Platform.isIOS
@@ -193,7 +208,7 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
     }
   }
 
-  _exportEpub() async {
+  Future<void> _exportEpub() async {
     late String? path;
     try {
       path = Platform.isIOS
@@ -236,7 +251,7 @@ class _DownloadsExportingScreen2State extends State<DownloadsExportingScreen2> {
     return rightClickPop(
       child: buildScreen(context),
       context: context,
-      canPop: !exporting,
+      canPop: !exporting && !_preparing,
     );
   }
 

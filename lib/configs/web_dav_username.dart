@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 
 import 'package:flutter/material.dart';
 
@@ -10,7 +11,7 @@ const _propertyName = "WebDavUserName";
 String get currentWebUserName => _currentWebDavUserName;
 
 Future<String?> initWebDavUserName() async {
-  _currentWebDavUserName  = await methods.loadProperty(_propertyName);
+  _currentWebDavUserName = await methods.loadProperty(_propertyName);
   return null;
 }
 
@@ -32,15 +33,15 @@ Future<dynamic> inputWebDavUserName(BuildContext context) async {
 }
 
 Widget webDavUserNameSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("WebDAV用户名"),
         subtitle: Text(currentWebDavUserNameName()),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await inputWebDavUserName(context);
           setState(() {});
-        },
+        }),
       );
     },
   );

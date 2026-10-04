@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
@@ -20,9 +21,12 @@ class _ProScreenState extends State<ProScreen> {
   @override
   void initState() {
     methods.loadLastLoginUsername().then((value) {
+      if (!mounted) return;
       setState(() {
         _username = value;
       });
+    }, onError: (Object error) {
+      if (mounted) defaultToast(context, '账号读取失败');
     });
     proEvent.subscribe(_setState);
     super.initState();
@@ -35,7 +39,7 @@ class _ProScreenState extends State<ProScreen> {
   }
 
   void _setState(_) {
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   @override
@@ -104,7 +108,7 @@ class _ProScreenState extends State<ProScreen> {
           const Divider(),
           ListTile(
             title: const Text("我曾经发过电"),
-            onTap: () async {
+            onTap: () => runUiAction(context, () async {
               try {
                 await methods.reloadPro();
                 defaultToast(context, "SUCCESS");
@@ -113,13 +117,13 @@ class _ProScreenState extends State<ProScreen> {
                 defaultToast(context, "FAIL");
               }
               await reloadIsPro();
-              setState(() {});
-            },
+              if (mounted) setState(() {});
+            }),
           ),
           const Divider(),
           ListTile(
             title: const Text("我刚才发了电"),
-            onTap: () async {
+            onTap: () => runUiAction(context, () async {
               final code = await displayTextInputDialog(context, title: "输入代码");
               if (code != null && code.isNotEmpty) {
                 try {
@@ -131,8 +135,8 @@ class _ProScreenState extends State<ProScreen> {
                 }
               }
               await reloadIsPro();
-              setState(() {});
-            },
+              if (mounted) setState(() {});
+            }),
           ),
           const Divider(),
           ...patProWidgets(),
@@ -191,7 +195,7 @@ class _ProScreenState extends State<ProScreen> {
       }
 
       widgets.add(ListTile(
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           var choose = await chooseMapDialog<int>(
             context,
             title: "选择操作",
@@ -216,7 +220,7 @@ class _ProScreenState extends State<ProScreen> {
               clearPatInfo();
               break;
           }
-        },
+        }),
         title: const Text("PAT会员"),
         subtitle: Text.rich(TextSpan(children: [
           TextSpan(text: text),
@@ -235,50 +239,50 @@ class _ProScreenState extends State<ProScreen> {
     return widgets;
   }
 
-  void addPatAccount() async {
-    String? key = await displayTextInputDialog(context, title: "输入PAT授权码");
-    if (key != null && key.isNotEmpty) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (BuildContext context) {
-            return AccessKeyReplaceScreen(accessKey: key);
-          },
-        ),
-      );
-      await reloadIsPro();
-      setState(() {});
-    }
-  }
+  Future<void> addPatAccount() => runUiAction(context, () async {
+        String? key = await displayTextInputDialog(context, title: "输入PAT授权码");
+        if (mounted && key != null && key.isNotEmpty) {
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (BuildContext context) {
+                return AccessKeyReplaceScreen(accessKey: key);
+              },
+            ),
+          );
+          await reloadIsPro();
+          if (mounted) setState(() {});
+        }
+      });
 
-  void reloadPatAccount() async {
-    defaultToast(context, "请稍候");
-    try {
-      await methods.reloadPatAccount();
-      await reloadIsPro();
-      defaultToast(context, "SUCCESS");
-    } catch (e) {
-      defaultToast(context, "FAIL : $e");
-    }
-    setState(() {});
-  }
+  Future<void> reloadPatAccount() => runUiAction(context, () async {
+        defaultToast(context, "请稍候");
+        try {
+          await methods.reloadPatAccount();
+          await reloadIsPro();
+          defaultToast(context, "SUCCESS");
+        } catch (e) {
+          defaultToast(context, "FAIL : $e");
+        }
+        if (mounted) setState(() {});
+      });
 
-  void bindThisAccount() async {
-    defaultToast(context, "请稍候");
-    try {
-      await methods.bindPatAccount(proInfoPat.accessKey, _username);
-      await methods.reloadPatAccount();
-      await reloadIsPro();
-      defaultToast(context, "SUCCESS");
-    } catch (e) {
-      defaultToast(context, "FAIL : $e");
-    }
-    setState(() {});
-  }
+  Future<void> bindThisAccount() => runUiAction(context, () async {
+        defaultToast(context, "请稍候");
+        try {
+          await methods.bindPatAccount(proInfoPat.accessKey, _username);
+          await methods.reloadPatAccount();
+          await reloadIsPro();
+          defaultToast(context, "SUCCESS");
+        } catch (e) {
+          defaultToast(context, "FAIL : $e");
+        }
+        if (mounted) setState(() {});
+      });
 
-  void clearPatInfo() async {
-    await methods.clearPat();
-    await reloadIsPro();
-    defaultToast(context, "已清除");
-    setState(() {});
-  }
+  Future<void> clearPatInfo() => runUiAction(context, () async {
+        await methods.clearPat();
+        await reloadIsPro();
+        defaultToast(context, "已清除");
+        if (mounted) setState(() {});
+      });
 }

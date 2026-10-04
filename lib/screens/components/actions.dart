@@ -11,7 +11,7 @@ Widget buildOrderSwitch(
   return MaterialButton(
     onPressed: () async {
       final target = await chooseSortBy(context);
-      if (target != null) {
+      if (context.mounted && target != null) {
         valueChanged(target);
       }
     },

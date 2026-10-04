@@ -1,8 +1,7 @@
 import 'dart:io';
 
-import 'package:clipboard/clipboard.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:filesystem_picker/filesystem_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 import 'package:jasmine/basic/methods.dart';
@@ -16,6 +15,7 @@ const coverShape = RoundedRectangleBorder(
 
 /// 显示一个toast
 void defaultToast(BuildContext context, String title) {
+  if (!context.mounted) return;
   showToast(
     title,
     context: context,
@@ -31,6 +31,7 @@ void defaultToast(BuildContext context, String title) {
 
 Future<T?> chooseListDialog<T>(BuildContext context,
     {required List<T> values, required String title, String? tips}) async {
+  if (!context.mounted) return null;
   return showDialog<T>(
     context: context,
     builder: (BuildContext context) {
@@ -62,6 +63,7 @@ Future<T?> chooseMapDialog<T>(
   required String title,
   required Map<String, T> values,
 }) async {
+  if (!buildContext.mounted) return null;
   return await showDialog<T>(
     context: buildContext,
     builder: (BuildContext context) {
@@ -97,38 +99,43 @@ Future<bool> androidMangeStorageRequest() async {
   return true;
 }
 
-Future saveImageFileToGallery(BuildContext context, String path) async {
-  if (!await androidGalleryPermissionRequest()) {
-    throw Exception("申请权限被拒绝");
+Future<void> saveImageFileToGallery(BuildContext context, String path) async {
+  try {
+    if (!await androidGalleryPermissionRequest()) {
+      defaultToast(context, "申请权限被拒绝");
+      return;
+    }
+    if (Platform.isIOS || Platform.isAndroid) {
+      await methods.saveImageFileToGallery(path);
+      defaultToast(context, "保存成功");
+    } else {
+      defaultToast(context, "暂不支持该平台");
+    }
+  } catch (_) {
+    defaultToast(context, "保存失败，请重试");
   }
-  if (Platform.isIOS || Platform.isAndroid) {
-    await methods.saveImageFileToGallery(path);
-    defaultToast(context, "保存成功");
-    return;
-  }
-  defaultToast(context, "暂不支持该平台");
 }
 
-Future saveImageFileToFile(BuildContext context, String path) async {
-  if (!await androidGalleryPermissionRequest()) {
-    throw Exception("申请权限被拒绝");
-  }
-  late String folder;
-  if (Platform.isAndroid) {
-    folder = await methods.picturesDir();
-  } else if (Platform.isIOS) {
-    folder = await methods.iosGetDocumentDir() + "/pictures";
-  } else {
-    var _f = await chooseFolder(context);
-    if (_f != null) {
-      folder = _f;
-    }
-  }
+Future<void> saveImageFileToFile(BuildContext context, String path) async {
   try {
+    if (!await androidGalleryPermissionRequest()) {
+      defaultToast(context, "申请权限被拒绝");
+      return;
+    }
+    final String? folder;
+    if (Platform.isAndroid) {
+      folder = await methods.picturesDir();
+    } else if (Platform.isIOS) {
+      folder = '${await methods.iosGetDocumentDir()}/pictures';
+    } else {
+      if (!context.mounted) return;
+      folder = await chooseFolder(context);
+    }
+    if (folder == null) return;
     await methods.copyPictureToFolder(folder, path);
     defaultToast(context, "保存成功");
-  } catch (e) {
-    defaultToast(context, "保存失败 : $e");
+  } catch (_) {
+    defaultToast(context, "保存失败，请重试");
   }
 }
 
@@ -155,77 +162,86 @@ Future<dynamic> openUrl(String url) async {
   }
 }
 
-final _controller = TextEditingController();
-
 Future<String?> displayTextInputDialog(BuildContext context,
     {String? title,
     String src = "",
     String? hint,
     String? desc,
     bool isPasswd = false}) {
-  _controller.text = src;
-  return showDialog(
+  if (!context.mounted) return Future.value();
+  return showDialog<String>(
     context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: title == null ? null : Text(title),
-        content: SingleChildScrollView(
-          child: ListBody(
-            children: [
-              TextField(
-                controller: _controller,
-                decoration: InputDecoration(hintText: hint),
-                obscureText: isPasswd,
-                obscuringCharacter: '\u2022',
-              ),
-              ...(desc == null
-                  ? []
-                  : [
-                      Container(
-                        padding: EdgeInsets.only(top: 20, bottom: 10),
-                        child: Text(
-                          desc,
-                          style: TextStyle(
-                              fontSize: 12,
-                              color: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.color
-                                  ?.withOpacity(.5)),
-                        ),
-                      )
-                    ]),
-            ],
-          ),
-        ),
-        actions: <Widget>[
-          MaterialButton(
-            child: Text('取消'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          MaterialButton(
-            child: Text('确认'),
-            onPressed: () {
-              Navigator.of(context).pop(_controller.text);
-            },
-          ),
-        ],
-      );
-    },
+    builder: (_) => _TextInputDialog(
+        title: title, src: src, hint: hint, desc: desc, isPasswd: isPasswd),
   );
 }
 
+class _TextInputDialog extends StatefulWidget {
+  final String? title, hint, desc;
+  final String src;
+  final bool isPasswd;
+  const _TextInputDialog(
+      {this.title,
+      required this.src,
+      this.hint,
+      this.desc,
+      required this.isPasswd});
+
+  @override
+  State<_TextInputDialog> createState() => _TextInputDialogState();
+}
+
+class _TextInputDialogState extends State<_TextInputDialog> {
+  late final _controller = TextEditingController(text: widget.src);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+        title: widget.title == null ? null : Text(widget.title!),
+        content: SingleChildScrollView(
+            child: ListBody(children: [
+          TextField(
+              controller: _controller,
+              decoration: InputDecoration(hintText: widget.hint),
+              obscureText: widget.isPasswd,
+              autocorrect: !widget.isPasswd,
+              enableSuggestions: !widget.isPasswd),
+          if (widget.desc != null)
+            Padding(
+                padding: const EdgeInsets.only(top: 20, bottom: 10),
+                child:
+                    Text(widget.desc!, style: const TextStyle(fontSize: 12))),
+        ])),
+        actions: [
+          MaterialButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消')),
+          MaterialButton(
+              onPressed: () => Navigator.of(context).pop(_controller.text),
+              child: const Text('确认')),
+        ],
+      );
+}
+
 /// 复制内容到剪切板
-void copyToClipBoard(BuildContext context, String string) {
-  FlutterClipboard.copy(string);
-  defaultToast(context, "已复制到剪切板");
+Future<void> copyToClipBoard(BuildContext context, String string) async {
+  try {
+    await Clipboard.setData(ClipboardData(text: string));
+    defaultToast(context, "已复制到剪切板");
+  } catch (_) {
+    defaultToast(context, "复制失败，请重试");
+  }
 }
 
 /// 显示一个确认框, 用户关闭弹窗以及选择否都会返回false, 仅当用户选择确定时返回true
 Future<bool> confirmDialog(
     BuildContext context, String title, String content) async {
+  if (!context.mounted) return false;
   return await showDialog(
           context: context,
           builder: (context) => AlertDialog(

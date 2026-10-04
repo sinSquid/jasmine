@@ -33,11 +33,14 @@ class _ComicCommentsListState extends State<ComicCommentsList>
   late Future<CommentPage> _future;
   int _maxPage = 1;
   int _page = 1;
+  int _requestRevision = 0;
 
   Future<CommentPage> _loadPage() async {
+    final revision = ++_requestRevision;
+    final page = _page;
     final response =
-        await methods.forum(widget.mode, widget.aid, widget.uid, _page);
-    if (_page == 1) {
+        await methods.forum(widget.mode, widget.aid, widget.uid, page);
+    if (mounted && revision == _requestRevision && page == 1) {
       if (response.total <= 0 || response.list.isEmpty) {
         _maxPage = 1;
       } else {
@@ -51,6 +54,18 @@ class _ComicCommentsListState extends State<ComicCommentsList>
   void initState() {
     _future = _loadPage();
     super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant ComicCommentsList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.aid != widget.aid ||
+        oldWidget.uid != widget.uid ||
+        oldWidget.mode != widget.mode) {
+      _page = 1;
+      _maxPage = 1;
+      _future = _loadPage();
+    }
   }
 
   @override
@@ -243,7 +258,22 @@ class _ComicCommentItem extends StatefulWidget {
 }
 
 class _ComicCommentItemState extends State<_ComicCommentItem> {
-  var likeLoading = false;
+  late final _fullTextTap = TapGestureRecognizer()..onTap = _openFullText;
+
+  void _openFullText() {
+    Navigator.of(context).push(MaterialPageRoute(
+        builder: (_) => TextPreviewScreen(
+            text: widget.comment.content
+                .replaceAll(
+                    "<div style='flex-direction:row;flex-wrap:wrap;'>", '')
+                .replaceAll('</div>', ''))));
+  }
+
+  @override
+  void dispose() {
+    _fullTextTap.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -347,11 +377,6 @@ class _ComicCommentItemState extends State<_ComicCommentItem> {
                               WidgetSpan(child: Container(width: 12)),
                               WidgetSpan(
                                   child: GestureDetector(
-                                onTap: () async {
-                                  setState(() {
-                                    likeLoading = true;
-                                  });
-                                },
                                 child: Text.rich(
                                   TextSpan(style: levelStyle, children: [
                                     WidgetSpan(
@@ -403,16 +428,7 @@ class _ComicCommentItemState extends State<_ComicCommentItem> {
                                   color: theme.colorScheme.secondary
                                       .withOpacity(.5),
                                 ),
-                                recognizer: TapGestureRecognizer()
-                                  ..onTap = () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) => TextPreviewScreen(
-                                          text: content,
-                                        ),
-                                      ),
-                                    );
-                                  },
+                                recognizer: _fullTextTap,
                               ),
                             ],
                     ),

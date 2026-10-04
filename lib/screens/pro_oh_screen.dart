@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 
 import '../basic/commons.dart';
@@ -19,9 +20,12 @@ class _ProScreenState extends State<ProOhScreen> {
   @override
   void initState() {
     methods.loadLastLoginUsername().then((value) {
+      if (!mounted) return;
       setState(() {
         _username = value;
       });
+    }, onError: (Object error) {
+      if (mounted) defaultToast(context, '账号读取失败');
     });
     super.initState();
   }
@@ -65,7 +69,7 @@ class _ProScreenState extends State<ProOhScreen> {
           const Divider(),
           ListTile(
             title: const Text("我曾经发过电"),
-            onTap: () async {
+            onTap: () => runUiAction(context, () async {
               try {
                 await methods.reloadPro();
                 defaultToast(context, "SUCCESS");
@@ -74,8 +78,8 @@ class _ProScreenState extends State<ProOhScreen> {
                 defaultToast(context, "FAIL");
               }
               await reloadIsPro();
-              setState(() {});
-            },
+              if (mounted) setState(() {});
+            }),
           ),
           const Divider(),
         ],

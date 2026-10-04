@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -63,15 +64,15 @@ Widget appOrientationWidget() {
   if (!Platform.isAndroid && !Platform.isIOS) {
     return const SizedBox.shrink();
   }
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return ListTile(
         title: const Text("APP方向"),
         subtitle: Text(appOrientationName(_appOrientation, context)),
-        onTap: () async {
+        onTap: () => runUiAction(context, () async {
           await chooseAppOrientation(context);
           setState(() {});
-        },
+        }),
       );
     },
   );

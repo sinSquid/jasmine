@@ -3,7 +3,6 @@ import 'package:jasmine/basic/platform.dart';
 import 'package:jasmine/configs/Authentication.dart';
 import 'package:jasmine/configs/android_display_mode.dart';
 import 'package:jasmine/configs/android_version.dart';
-import 'package:jasmine/configs/always_enter_browser.dart';
 import 'package:jasmine/configs/app_font_size.dart';
 import 'package:jasmine/configs/app_orientation.dart';
 import 'package:jasmine/configs/display_jmcode.dart';
@@ -15,7 +14,6 @@ import 'package:jasmine/configs/gesture_speed.dart';
 import 'package:jasmine/configs/no_animation.dart';
 import 'package:jasmine/configs/pager_column_number.dart';
 import 'package:jasmine/configs/pager_cover_rate.dart';
-import 'package:jasmine/configs/passed.dart';
 import 'package:jasmine/configs/proxy.dart';
 import 'package:jasmine/configs/reader_zoom_scale.dart';
 import 'package:jasmine/configs/recommend_links.dart';
@@ -50,8 +48,6 @@ import 'pager_controller_mode.dart';
 import 'pager_view_mode.dart';
 
 Future initConfigs(BuildContext context) async {
-  await initAlwaysEnterBrowser();
-  await initPassed();
   await initAndroidVersion();
   await initAndroidDisplayMode();
   await initVersion();

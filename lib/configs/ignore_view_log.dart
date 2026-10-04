@@ -1,3 +1,4 @@
+import 'package:jasmine/basic/ui_action.dart';
 import 'package:flutter/material.dart';
 
 import '../basic/methods.dart';
@@ -14,15 +15,15 @@ bool currentIgnoreVewLog() {
 }
 
 Widget ignoreVewLogSetting() {
-  return StatefulBuilder(
+  return SettingsBuilder(
     builder: (BuildContext context, void Function(void Function()) setState) {
       return SwitchListTile(
         value: _ignoreVewLog,
-        onChanged: (value) async {
+        onChanged: (value) => runUiAction(context, () async {
           await methods.saveProperty(_propertyName, "$value");
           _ignoreVewLog = value;
           setState(() {});
-        },
+        }),
         title: const Text("详情页不记录浏览记录"),
       );
     },

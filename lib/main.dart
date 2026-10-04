@@ -21,7 +21,6 @@ class Jenny extends StatefulWidget {
 }
 
 class _JennyState extends State<Jenny> {
-
   @override
   void initState() {
     onDesktopStart();
@@ -39,6 +38,7 @@ class _JennyState extends State<Jenny> {
   _setState(_) {
     setState(() => {});
   }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
